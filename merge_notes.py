@@ -45,6 +45,16 @@ def main():
         arsiv.setdefault("candidates", {})
         deep_merge_symbols(arsiv["candidates"], delta["candidates"])
 
+    # Istihbarat: alerts/calendar/radar tumden degisir (rutin gecerlileri tasir),
+    # companies sembol bazinda ezilir -- build.py merge_intel ile ayni kural.
+    if delta.get("intel"):
+        intel = arsiv.setdefault("intel", {})
+        for key in ("alerts", "calendar", "radar", "updated_at"):
+            if key in delta["intel"]:
+                intel[key] = delta["intel"][key]
+        if delta["intel"].get("companies"):
+            intel.setdefault("companies", {}).update(delta["intel"]["companies"])
+
     for key in ("macro_summary", "macro_calendar"):
         if delta.get(key):
             arsiv[key] = delta[key]
@@ -68,6 +78,7 @@ def main():
     print("  makro ozet: %s | takvim: %s"
           % ("evet" if delta.get("macro_summary") else "hayir",
              "evet" if delta.get("macro_calendar") else "hayir"))
+    print("  istihbarat: %s" % ("evet" if delta.get("intel") else "hayir"))
     print("  toplam pozisyon notu: %d" % after)
     return 0
 
