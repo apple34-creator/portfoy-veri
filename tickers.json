@@ -1,0 +1,160 @@
+{
+ "_comment": "Bu dosyada POZISYON BILGISI YOKTUR (adet/maliyet ozel artifact'te kalir). Sadece fiyati cekilecek semboller.",
+ "positions": [
+  "TSLA",
+  "PLTR",
+  "NVDA",
+  "AMD",
+  "UUUU",
+  "HOOD",
+  "TEM",
+  "SOFI",
+  "IBRX",
+  "RKLB",
+  "JOBY",
+  "ASPI",
+  "OKLO"
+ ],
+ "candidates": [
+  {
+   "symbol": "AEM",
+   "sector": "Altin"
+  },
+  {
+   "symbol": "GOLD",
+   "sector": "Altin"
+  },
+  {
+   "symbol": "NEM",
+   "sector": "Altin"
+  },
+  {
+   "symbol": "FCX",
+   "sector": "Bakir"
+  },
+  {
+   "symbol": "SCCO",
+   "sector": "Bakir"
+  },
+  {
+   "symbol": "TECK",
+   "sector": "Bakir"
+  },
+  {
+   "symbol": "GIS",
+   "sector": "Gida"
+  },
+  {
+   "symbol": "KHC",
+   "sector": "Gida"
+  },
+  {
+   "symbol": "KO",
+   "sector": "Gida"
+  },
+  {
+   "symbol": "MDLZ",
+   "sector": "Gida"
+  },
+  {
+   "symbol": "PEP",
+   "sector": "Gida"
+  },
+  {
+   "symbol": "CMCSA",
+   "sector": "Iletisim"
+  },
+  {
+   "symbol": "META",
+   "sector": "Iletisim"
+  },
+  {
+   "symbol": "T",
+   "sector": "Iletisim"
+  },
+  {
+   "symbol": "TMUS",
+   "sector": "Iletisim"
+  },
+  {
+   "symbol": "VZ",
+   "sector": "Iletisim"
+  },
+  {
+   "symbol": "CSX",
+   "sector": "Lojistik"
+  },
+  {
+   "symbol": "FDX",
+   "sector": "Lojistik"
+  },
+  {
+   "symbol": "UNP",
+   "sector": "Lojistik"
+  },
+  {
+   "symbol": "UPS",
+   "sector": "Lojistik"
+  },
+  {
+   "symbol": "XPO",
+   "sector": "Lojistik"
+  },
+  {
+   "symbol": "ABBV",
+   "sector": "Saglik"
+  },
+  {
+   "symbol": "AMGN",
+   "sector": "Saglik"
+  },
+  {
+   "symbol": "JNJ",
+   "sector": "Saglik"
+  },
+  {
+   "symbol": "LLY",
+   "sector": "Saglik"
+  },
+  {
+   "symbol": "MRK",
+   "sector": "Saglik"
+  },
+  {
+   "symbol": "PFE",
+   "sector": "Saglik"
+  },
+  {
+   "symbol": "UNH",
+   "sector": "Saglik"
+  },
+  {
+   "symbol": "ASTS",
+   "sector": "Uzay Teknolojisi"
+  },
+  {
+   "symbol": "BA",
+   "sector": "Uzay Teknolojisi"
+  },
+  {
+   "symbol": "LMT",
+   "sector": "Uzay Teknolojisi"
+  },
+  {
+   "symbol": "NOC",
+   "sector": "Uzay Teknolojisi"
+  },
+  {
+   "symbol": "RDW",
+   "sector": "Uzay Teknolojisi"
+  },
+  {
+   "symbol": "GOOGL",
+   "sector": "Yapay Zeka"
+  },
+  {
+   "symbol": "MSFT",
+   "sector": "Yapay Zeka"
+  }
+ ]
+}

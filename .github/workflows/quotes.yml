@@ -1,0 +1,59 @@
+name: Portföy fiyat verisi
+
+# Neden: Claude bulut rutinlerinin sandbox'ından finans veri host'ları egress
+# proxy tarafından 403 ile engelli. GitHub Actions çalıştırıcısında engel yok.
+# Burada çekilen quotes.json'ı Claude rutini raw.githubusercontent.com üzerinden
+# okuyup portföy hesaplarını yapıyor ve artifact'i yayınlıyor.
+
+on:
+  schedule:
+    - cron: '5 6 * * 1-5'     # hafta içi 06:05 UTC — açılış öncesi (Berlin 08:05 / kışın 07:05)
+    - cron: '5 21 * * 1-5'    # hafta içi 21:05 UTC — ABD kapanışı sonrası (Berlin 23:05 / kışın 22:05)
+    - cron: '55 16 * * 0'     # pazar 16:55 UTC — haftalık derin koşu (adaylar dahil)
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Koşu modu'
+        type: choice
+        options: [aksam, sabah, pazar]
+        default: aksam
+
+permissions:
+  contents: write
+
+concurrency:
+  group: portfoy-quotes
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Modu belirle
+        id: m
+        run: |
+          case "${{ github.event.schedule }}" in
+            "5 6 * * 1-5")  MODE=sabah ;;
+            "5 21 * * 1-5") MODE=aksam ;;
+            "55 16 * * 0")  MODE=pazar ;;
+            *)              MODE="${{ github.event.inputs.mode || 'aksam' }}" ;;
+          esac
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "Mod: $MODE"
+
+      - name: Fiyatları çek
+        run: python3 fetch_quotes.py --mode "${{ steps.m.outputs.mode }}"
+
+      - name: quotes.json'u işle
+        run: |
+          git config user.name  "portfoy-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add quotes.json
+          if git diff --cached --quiet; then
+            echo "Değişiklik yok, commit atlanıyor."
+          else
+            git commit -m "veri: ${{ steps.m.outputs.mode }} $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git push
+          fi
