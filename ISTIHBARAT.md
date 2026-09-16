@@ -10,6 +10,13 @@ bilgi yazilmaz, CEO adi dogrulanamiyorsa `""` birakilir.
 `python3 -c "import json;print(json.dumps(json.load(open('notes.json')).get('intel',{}),ensure_ascii=False))"`
 Buradaki `alerts` listesi ONCEKI uyarilardir (yeni uyari tespiti icin sakla).
 
+## Odak: sirketlerin basindakiler
+
+Her sirket icin once CEO'yu, sonra ust yonetimi (kurucu, CFO, yonetim kurulu baskani) takip et:
+aciklamalari ve roportajlari, hisse alim/satimlari (Form 4; 10b5-1 plani mi degil mi belirt),
+kisisel yatirimlari ve baska sirketlerdeki rolleri, gorev degisiklikleri/istifalar,
+sosyal medyada (ozellikle X) habere yansiyan cikislari.
+
 ## Uyari seviyeleri
 
 - `kritik`: hisseyi/portfoyu simdi ciddi etkileyebilecek olay — hisse ihraci/ATM/sulanma,
