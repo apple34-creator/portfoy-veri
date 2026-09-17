@@ -17,6 +17,31 @@ aciklamalari ve roportajlari, hisse alim/satimlari (Form 4; 10b5-1 plani mi degi
 kisisel yatirimlari ve baska sirketlerdeki rolleri, gorev degisiklikleri/istifalar,
 sosyal medyada (ozellikle X) habere yansiyan cikislari.
 
+## Sosyal medya ve uzman gorusleri
+
+Vedat'in acikca istedigi bir boyut: X, Reddit ve YouTube gibi platformlarda 13 sirket ve
+CEO'lari hakkinda ne konusuldugunu de tara, ozellikle bu alanin taninmis/guvenilir
+uzman-analist-yorumcularinin dedigine bak. Nasil:
+
+- **Arama deseni:** "<Sirket/SEMBOL> stock reddit", "<Sirket/SEMBOL> stock X OR twitter",
+  "<Sirket/SEMBOL> stock YouTube analysis", ve CEO adiyla "<CEO adi> <sirket> interview OR
+  statement". WebSearch, bu platformlardaki icerigi DOGRUDAN gezemez (bulut sandbox'indan
+  X/Reddit/YouTube'a erisim yok) ama bu icerige atif yapan/onu ozetleyen sayfalari bulabilir —
+  bulunan sonuc bir haber sitesiyse ama kaynagi acikca bir X gonderisi/Reddit tartismasi/
+  YouTube videosuysa, o platformu ve mumkunse hesap/kanal adini `source_label`'da belirt.
+- **Sabit isim listesi TUTMA.** Onceden belirlenmis "su kisiler uzmandir" listesi zamanla
+  eskir ya da yanlis olabilir (uydurma riski). Bunun yerine HER seferinde bulunan icerigin
+  **taninmis/buyuk takipcili bir hesaptan ya da yerlesik bir finans kanalindan/yayinindan**
+  gelip gelmedigine bak (buyuk finans medyasinin da atif yaptigi, cok izlenen/takip edilen,
+  isim ve gecmisi belli biri/kurum). Isimsiz forum yorumu, dogrulanamayan hesap ya da tek
+  kisilik rastgele goruslere `izle` seviyesinin altinda bile yer verme.
+- **Nereye yazilir:** Bulgular AYRI bir alan degil, mevcut `alerts` (aciliyet varsa) ve
+  `companies[SEMBOL].items` (aciliyet yoksa) semasina girer — asagidaki JSON sekli aynen
+  kullanilir. `source_label`, sosyal/uzman kaynakliysa platform + hesap/kanal adini birlikte
+  tasir, orn. `"source_label":"X — @username"` ya da `"source_label":"YouTube — Kanal Adi"`.
+  Boylece "anlik rapor" (sayfadaki "Acil ve Onemli" bolumu) bu bulgulari da gosterir —
+  yeni bir sayfa bolumu ya da JSON alani EKLENMEZ.
+
 ## Uyari seviyeleri
 
 - `kritik`: hisseyi/portfoyu simdi ciddi etkileyebilecek olay — hisse ihraci/ATM/sulanma,
@@ -38,29 +63,37 @@ sosyal medyada (ozellikle X) habere yansiyan cikislari.
    gecen haftanin en oynaklari.
 3. Yalnizca `alerts` guncellenir (asagidaki Uyari listesi kurallari). `companies`e dokunma.
 
-## MOD: aksam (gunluk tam tarama, en fazla 10 WebSearch)
+## MOD: aksam (gunluk tam tarama, en fazla 13 WebSearch)
 
 1. Sabah modundaki aramalar.
 2. Haberi cikan en fazla 6 sirket icin sirket bazli arama ("<Sirket> <CEO> news"):
    CEO acıklamalari, yonetici hisse alim/satimi (Form 4), yatirim/satin alma/ortaklik,
    sozlesme, duzenleyici karar.
-3. Sosyal medya: gunun en cok hareket eden 2 sembolu icin
-   "<SEMBOL> stock reddit OR stocktwits OR X" — yalnizca habere yansimis tartismalari al.
+3. Sosyal medya + uzman gorusu (yukaridaki "Sosyal medya ve uzman gorusleri" bolumune gore):
+   gunun en cok hareket eden 3-4 sembolu icin "<SEMBOL> stock reddit OR X OR stocktwits" VE
+   ayri bir "<SEMBOL> stock YouTube analysis" sorgusu — yalnizca habere yansimis/taninmis
+   kaynaktan gelen tartismalari al.
 4. `alerts` + degisen `companies` + gerekiyorsa `calendar` guncellenir.
 
-## MOD: pazar (derin, en fazla 25 WebSearch)
+## MOD: pazar (derin, en fazla 30 WebSearch)
 
 1. 13 sirketin hepsi icin sirket bazli arama; `companies` 13'u de yenilenir, CEO adlari
    dogrulanir (bos olanlari doldurmaya calis, emin degilsen bos kalsin).
-2. `calendar`: onumuzdeki 8 haftanin sirket katalizorleri (6-8 madde).
-3. `radar`: portfoy temalarina yakin (yapay zeka, nukleer/uranyum, nadir toprak, uzay,
+2. Sosyal medya + uzman gorusu (yukaridaki bolume gore): 13 sirketin TAMAMI icin
+   "<SEMBOL> stock reddit OR X OR YouTube" taramasi, artiyla en cok konusulan 3-5 sirket
+   icin ayrica "<Sirket> analyst OR expert opinion this week" sorgusu — taninmis kaynak
+   kriterini uygula, isimsiz yorum alma.
+3. `calendar`: onumuzdeki 8 haftanin sirket katalizorleri (6-8 madde).
+4. `radar`: portfoy temalarina yakin (yapay zeka, nukleer/uranyum, nadir toprak, uzay,
    eVTOL, fintech, biyoteknoloji) buyuyen 4-6 sirket/halka arz. Tavsiye dili yok.
    Anthropic gecerse "bu raporu yazan Claude, Anthropic'in urunu" notunu ekle.
-4. `alerts` guncellenir.
+5. `alerts` guncellenir.
 
-## MOD: cumartesi (hafta sonu, en fazla 6 WebSearch)
+## MOD: cumartesi (hafta sonu, en fazla 8 WebSearch)
 
-Sabah modu + hafta sonu cikan sirket haberleri icin en fazla 3 sirket bazli arama.
+Sabah modu + hafta sonu cikan sirket haberleri icin en fazla 3 sirket bazli arama, artiyla
+haftanin en cok hareket eden 1-2 sembolu icin "<SEMBOL> stock reddit OR X OR YouTube"
+(yukaridaki "Sosyal medya ve uzman gorusleri" bolumune gore, taninmis kaynak kriteriyle).
 `alerts` ve degisen `companies` guncellenir.
 
 ## Uyari listesi kurallari
