@@ -8,18 +8,17 @@ REPO: https://raw.githubusercontent.com/apple34-creator/portfoy-veri/main
 3) cd <D> && for f in quotes.json merge_notes.py inline_data.py apply_trades.py ISTIHBARAT.md; do curl -sS -o $f <REPO>/$f; done
    (<REPO> = yukaridaki adres). quotes.json'un "asof" alani 6 saatten eskiyse YAYINLAMA - GitHub Actions calismamis demektir; adim 11'deki bildirimi bu hatayla gonder ve dur.
 3c) BEKLEYEN ISLEM KUYRUGU: ArtifactData (action:"query", url=ARTIFACT, collection:"trades",
-    query:{"where":[["status","eq","pending"]]}) ile bekleyen islemleri oku. Sonuc BOSSA bu
-    adimi tamamen atla, positions.json'a dokunma. Doluysa:
+    query:{"where":[["status","eq","pending"]]}) ile bekleyen islemleri oku (SADECE okuma,
+    ArtifactData'ya YAZMA - yazma izin istemi cikarir ve kosu askida kalir, kimse onaylayamaz).
+    Sonuc BOSSA bu adimi tamamen atla, positions.json'a dokunma. Doluysa:
     - Her belgenin id + symbol + side + shares + price alanlarini <D>/trades.json'a yaz:
       {"trades":[{"id":"...","symbol":"...","side":"buy|sell","shares":...,"price":...}, ...]}
     - python3 apply_trades.py positions.json trades.json --out positions.json --results results.json
-    - <D>/results.json oku. "applied" listesindeki her id icin ArtifactData action:"update",
-      collection:"trades", doc_id:<id>, if_version:<sorgudan gelen version>,
-      data:{"status":"processed","processed_at":"<simdiki ISO zaman>"}.
-      "errors" listesindeki her id icin ayni sekilde data:{"status":"error",
-      "error_detail":"<reason>","processed_at":"..."}.
-    - "applied" bos degilse positions.json DEGISTI demektir; adim 9'daki files listesine
-      "positions.json" da eklenmeli (asagida belirtildi).
+      (script kendisi daha once islenmis id'leri positions.json'daki processed_trade_ids
+      listesinden tanir ve atlar; tekrar isleme riski yok, ArtifactData'ya YAZMAYA GEREK YOK.)
+    - <D>/results.json oku, adim 10'daki ozete kac islem uygulandigini/hata verdigini ekle.
+    - positions.json HER ZAMAN degisti sayilir (processed_trade_ids guncellenir); adim 9'daki
+      files listesine "positions.json" HER ZAMAN eklenmeli (asagida zaten var).
 4) python3 build.py --mode aksam --quotes quotes.json --brief brief.txt
    exit code 1 ise YAYINLAMA, hatayi bildirimle raporla, dur.
 5) brief.txt oku. "HABER NOTU YENILENMESI GEREKEN" satirindaki semboller icin (en fazla 4; "yok" ise atla) WebSearch ile bugunun haberine bak; her biri icin 2-3 cumle tarafsiz Turkce not (tavsiye yok, al/sat ima etme) + kaynak URL + kaynak adi. "SON RAPORDAN BU YANA" satirindan tek paragraf ozet cikar.

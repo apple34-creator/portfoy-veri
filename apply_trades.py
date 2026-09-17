@@ -21,12 +21,17 @@ Kurallar:
 - avg_cost_is_estimate bayragi bu script tarafindan DEGISTIRILMEZ -- eski pay hala
   tahmine dayali oldugu icin "artik gercek" denemez; bu ayri bir P0 is (gercek maliyetleri
   toplu girmek).
+- ISLENEN ID'LER: positions.json'un "processed_trade_ids" listesinde daha once gorulen
+  bir id tekrar GELIRSE sessizce ATLANIR (basarili da hatali da sayilmaz) -- boylece rutin
+  ArtifactData'ya YAZMADAN (bulut rutininde izin istemi cikarip askida kalan islem) ayni
+  islemi iki kez uygulamaz. Liste en fazla son 300 id'yi tutar (eskiler dusurulur).
 - Yalniz Python standart kutuphanesi kullanir.
 """
 
 import argparse, json, sys
 
 EPS = 1e-4
+MAX_PROCESSED_IDS = 300
 
 
 def apply_one(cfg_positions, trade):
@@ -89,22 +94,33 @@ def main():
     trades_doc = json.load(open(a.trades, encoding="utf-8"))
     trades = trades_doc.get("trades") or []
 
-    applied, errors = [], []
+    seen = list(cfg.get("processed_trade_ids") or [])
+    seen_set = set(seen)
+
+    applied, errors, skipped = [], [], []
     for t in trades:
+        tid = t.get("id")
+        if tid and tid in seen_set:
+            skipped.append(tid)
+            continue
         result, err = apply_one(cfg["positions"], t)
         if err:
-            errors.append({"id": t.get("id"), "symbol": t.get("symbol"), "reason": err})
+            errors.append({"id": tid, "symbol": t.get("symbol"), "reason": err})
         else:
-            result["id"] = t.get("id")
+            result["id"] = tid
             applied.append(result)
+        if tid:
+            seen.append(tid)
+
+    cfg["processed_trade_ids"] = seen[-MAX_PROCESSED_IDS:]
 
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(cfg, f, ensure_ascii=False, indent=1)
         f.write("\n")
     with open(a.results, "w", encoding="utf-8") as f:
-        json.dump({"applied": applied, "errors": errors}, f, ensure_ascii=False, indent=1)
+        json.dump({"applied": applied, "errors": errors, "skipped": skipped}, f, ensure_ascii=False, indent=1)
 
-    print("ISLEM SONUCU: %d uygulandi, %d hata" % (len(applied), len(errors)))
+    print("ISLEM SONUCU: %d uygulandi, %d hata, %d zaten islenmisti (atlandi)" % (len(applied), len(errors), len(skipped)))
     for r in applied:
         tag = "KAPANDI" if r["removed"] else ("%.4g adet, ort. maliyet $%.4g" % (r["new_shares"], r["new_avg_cost"]))
         print("  + %s %s %.4g@$%.4g -> %s" % (r["symbol"], r["side"], r["shares"], r["price"], tag))
