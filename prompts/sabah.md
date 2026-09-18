@@ -11,8 +11,10 @@ REPO: https://raw.githubusercontent.com/apple34-creator/portfoy-veri/main
     query:{"where":[["status","eq","pending"]]}) ile bekleyen islemleri oku (SADECE okuma,
     ArtifactData'ya YAZMA - yazma izin istemi cikarir ve kosu askida kalir, kimse onaylayamaz).
     Sonuc BOSSA bu adimi tamamen atla, positions.json'a dokunma. Doluysa:
-    - Her belgenin id + symbol + side + shares + price alanlarini <D>/trades.json'a yaz:
-      {"trades":[{"id":"...","symbol":"...","side":"buy|sell","shares":...,"price":...}, ...]}
+    - Her belgenin id + symbol + side + shares + price + note + submitted_at alanlarini
+      <D>/trades.json'a yaz (note KARAR GUNLUGU icin sart, bos bile olsa alani gec):
+      {"trades":[{"id":"...","symbol":"...","side":"buy|sell","shares":...,"price":...,
+                  "note":"...","submitted_at":"..."}, ...]}
     - python3 apply_trades.py positions.json trades.json --out positions.json --results results.json
       (script kendisi daha once islenmis id'leri positions.json'daki processed_trade_ids
       listesinden tanir ve atlar; tekrar isleme riski yok, ArtifactData'ya YAZMAYA GEREK YOK.)

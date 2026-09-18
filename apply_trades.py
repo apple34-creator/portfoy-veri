@@ -7,9 +7,13 @@ Kullanim:
     python3 apply_trades.py positions.json trades.json --out positions.json --results results.json
 
 Girdi : positions.json (mevcut pozisyonlar)
-        trades.json     ({"trades": [{"id","symbol","side":"buy"|"sell","shares","price"}, ...]})
-Cikti : positions.json (guncellenmis, --out ile ayni ya da farkli dosyaya)
-        results.json    ({"applied": [...], "errors": [...]})
+        trades.json     ({"trades": [{"id","symbol","side":"buy"|"sell","shares","price",
+                         "note","submitted_at"}, ...]}) -- note/submitted_at opsiyonel ama
+                         KARAR GUNLUGU icin onemli, rutin promptu bunlari da kopyalar.
+Cikti : positions.json (guncellenmis, --out ile ayni ya da farkli dosyaya; basarili her islem
+                        "decisions" dizisine de eklenir -- karar gunlugu)
+        results.json    ({"applied": [...], "errors": [...], "skipped": [...],
+                         "decisions_added": N})
 
 Kurallar:
 - Yalnizca positions.json'da ZATEN VAR olan semboller islenir. Yeni sembol eklemek bu
@@ -21,6 +25,10 @@ Kurallar:
 - avg_cost_is_estimate bayragi bu script tarafindan DEGISTIRILMEZ -- eski pay hala
   tahmine dayali oldugu icin "artik gercek" denemez; bu ayri bir P0 is (gercek maliyetleri
   toplu girmek).
+- KARAR GUNLUGU: basarili her islem, positions.json'daki "decisions" dizisine
+  {id, date, symbol, side, shares, price, note} olarak EKLENIR (mevcut kayitlar silinmez,
+  yalnizca son 200 tutulur). Sayfa bu listeyi "Karar Gunlugu" bolumunde, o gunden bugune
+  fiyat degisimiyle birlikte gosterir. Hatali islem gunluge YAZILMAZ (uygulanmadi zaten).
 - ISLENEN ID'LER: positions.json'un "processed_trade_ids" listesinde daha once gorulen
   bir id tekrar GELIRSE sessizce ATLANIR (basarili da hatali da sayilmaz) -- boylece rutin
   ArtifactData'ya YAZMADAN (bulut rutininde izin istemi cikarip askida kalan islem) ayni
@@ -29,9 +37,11 @@ Kurallar:
 """
 
 import argparse, json, sys
+from datetime import datetime, timezone
 
 EPS = 1e-4
 MAX_PROCESSED_IDS = 300
+MAX_DECISIONS = 200
 
 
 def apply_one(cfg_positions, trade):
@@ -81,6 +91,24 @@ def apply_one(cfg_positions, trade):
             "new_avg_cost": old_avg if removed else pos["avg_cost"]}, None
 
 
+def decision_record(tid, trade):
+    """Karar gunlugu kaydi: 'neden aldim/sattim' notunu islemle birlikte kalici tutar.
+
+    Tarih olarak islemin girildigi an (submitted_at) tercih edilir; yoksa bugun. Boylece
+    kuyrukta bir gun bekleyen bir islem, gercekten karar verildigi gunle gunluge girer.
+    """
+    submitted = str(trade.get("submitted_at") or "")
+    date = submitted[:10] if len(submitted) >= 10 else datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    rec = {"id": tid, "date": date, "symbol": trade.get("symbol"),
+           "side": trade.get("side"), "note": (trade.get("note") or "").strip()[:300]}
+    try:
+        rec["shares"] = round(float(trade.get("shares")), 6)
+        rec["price"] = round(float(trade.get("price")), 4)
+    except (TypeError, ValueError):
+        pass
+    return rec
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("positions")
@@ -97,6 +125,8 @@ def main():
     seen = list(cfg.get("processed_trade_ids") or [])
     seen_set = set(seen)
 
+    decisions = list(cfg.get("decisions") or [])
+
     applied, errors, skipped = [], [], []
     for t in trades:
         tid = t.get("id")
@@ -109,16 +139,19 @@ def main():
         else:
             result["id"] = tid
             applied.append(result)
+            decisions.append(decision_record(tid, t))
         if tid:
             seen.append(tid)
 
     cfg["processed_trade_ids"] = seen[-MAX_PROCESSED_IDS:]
+    cfg["decisions"] = decisions[-MAX_DECISIONS:]
 
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(cfg, f, ensure_ascii=False, indent=1)
         f.write("\n")
     with open(a.results, "w", encoding="utf-8") as f:
-        json.dump({"applied": applied, "errors": errors, "skipped": skipped}, f, ensure_ascii=False, indent=1)
+        json.dump({"applied": applied, "errors": errors, "skipped": skipped,
+                   "decisions_added": len(applied)}, f, ensure_ascii=False, indent=1)
 
     print("ISLEM SONUCU: %d uygulandi, %d hata, %d zaten islenmisti (atlandi)" % (len(applied), len(errors), len(skipped)))
     for r in applied:
