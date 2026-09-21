@@ -156,5 +156,9 @@
    "symbol": "MSFT",
    "sector": "Yapay Zeka"
   }
- ]
+ ],
+ "fx": [
+  "EURUSD=X"
+ ],
+ "crypto": []
 }

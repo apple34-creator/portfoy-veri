@@ -174,18 +174,58 @@ def main():
     else:
         candidates = prev.get("candidates") or []
 
+    # Doviz kuru: Alman vergisi kari EURO ile hesaplar (alis gunu kuru / satis gunu kuru).
+    # 5 yillik gunluk seri saklanir ki eski alimlarin kuru da bulunabilsin.
+    # Cekilemezse onceki deger devralinir; hisse fiyatlari bundan etkilenmez.
+    fx = dict(prev.get("fx") or {})
+    for fsym in cfg.get("fx") or []:
+        d = fetch_spark([fsym], "5y", "1d").get(fsym)
+        if not d:
+            continue
+        key = fsym.replace("=X", "")
+        rate = float(d["meta"].get("regularMarketPrice") or d["closes"][-1])
+        fx[key] = {
+            "rate": round(rate, 5),
+            "ts": d["ts"],
+            "closes": [round(c, 5) for c in d["closes"]],
+        }
+
+    # Kripto (ornek: BTC-EUR): fiyat dogrudan euro. Adet/maliyet ASLA burada tutulmaz.
+    crypto = dict(prev.get("crypto") or {})
+    csyms = cfg.get("crypto") or []
+    if csyms:
+        cb = fetch_spark(csyms, "1y", "1d")
+        for c in csyms:
+            d = cb.get(c)
+            if not d:
+                if c in crypto:
+                    crypto[c] = dict(crypto[c], stale=True)
+                continue
+            closes, meta = d["closes"], d["meta"]
+            price = float(meta.get("regularMarketPrice") or closes[-1])
+            crypto[c] = {
+                "price": round(price, 6),
+                "day_change_pct": round(float(meta.get("regularMarketChangePercent") or 0), 2),
+                "week52_high": round(max(closes), 6),
+                "week52_low": round(min(closes), 6),
+                "chg_1y_pct": pct(price, closes[0]) if len(closes) > 200 else None,
+            }
+
     doc = {
         "asof": datetime.now(timezone.utc).isoformat(timespec="minutes"),
         "mode": a.mode,
         "source": "Yahoo Finance spark (GitHub Actions)",
         "quotes": quotes, "series": series, "candidates": candidates,
+        "fx": fx, "crypto": crypto,
     }
     with open(a.out, "w", encoding="ascii") as f:
         json.dump(doc, f, ensure_ascii=True, separators=(",", ":"))
         f.write("\n")
 
-    print("%s yazildi | mod=%s | %d sembol | %d aday | %s"
-          % (a.out, a.mode, len(quotes), len(candidates), doc["asof"]))
+    print("%s yazildi | mod=%s | %d sembol | %d aday | kur: %s | kripto: %d | %s"
+          % (a.out, a.mode, len(quotes), len(candidates),
+             ", ".join("%s=%s" % (k, v["rate"]) for k, v in fx.items()) or "yok",
+             len(crypto), doc["asof"]))
     for s in syms:
         q = quotes.get(s)
         if q:
