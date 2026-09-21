@@ -87,7 +87,24 @@ uzman-analist-yorumcularinin dedigine bak. Nasil:
 4. `radar`: portfoy temalarina yakin (yapay zeka, nukleer/uranyum, nadir toprak, uzay,
    eVTOL, fintech, biyoteknoloji) buyuyen 4-6 sirket/halka arz. Tavsiye dili yok.
    Anthropic gecerse "bu raporu yazan Claude, Anthropic'in urunu" notunu ekle.
-5. `alerts` guncellenir.
+5. TEZ BOZULMA KONTROLU (Faz 13c, haftada bir yalnizca burada): Vedat her pozisyon icin
+   "neden tutuyorum" (`thesis`) ve "sunu gorursem yanilmisim" (`breaks_if`) yazdi. Oku:
+   `python3 -c "import json;p=json.load(open('positions.json'));[print(x['symbol'],'|',x.get('breaks_if')) for x in p['positions']+p.get('crypto',[]) if x.get('breaks_if')]"`
+   (dosya rutinin indirdigi klasordeki positions.json; yoksa bu adimi atla.)
+   Bu haftaki aramalarda (1-2. adimlar) bulunan haberleri her sembolun `breaks_if` cumlesiyle
+   karsilastir. ETH icin ayrica 1 arama: "Ethereum stablecoin tokenization market share OR ETF flows this week".
+   - Kosul GERCEKLESTI (ornegin yonetim beklentiyi dusurdu, lisans reddedildi, buyuk hisse
+     satisi acikladi): `kritik` uyari. Baslik "Tez kontrolu: <SEMBOL> — bozulma kosulu gerceklesti".
+   - Kosula DOGRUDAN DOKUNAN ama henuz gerceklesmemis bir gelisme (erteleme sinyali, sorusturma
+     acildi, rakam sinira yaklasti): `yuksek` uyari. Baslik "Tez kontrolu: <SEMBOL> — bozulma
+     kosuluna dokunan haber".
+   - Metinde once kosulun kendisini (tirnak icinde, kisa), sonra haberin ne dedigini, sonra
+     "bu kosulu karsiliyor mu / neden henuz degil" ayrimini yaz. Fiyat dususu TEK BASINA tez
+     bozulmasi DEGILDIR — yalnizca fiyat hareketi varsa uyari yazma.
+   - Satis/alis onermez; karar Vedat'in. Kaynak zorunlu. Dokunan haber yoksa hicbir sey yazma.
+   - Bu adimdan gelen uyarilar 6 uyari sinirina dahil ama siralamada ayni seviyedeki diger
+     uyarilarin onune gecer.
+6. `alerts` guncellenir.
 
 ## MOD: cumartesi (hafta sonu, en fazla 8 WebSearch)
 
