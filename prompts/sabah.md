@@ -5,7 +5,7 @@ REPO: https://raw.githubusercontent.com/apple34-creator/portfoy-veri/main
 
 1) Artifact araciyla dosya listesini al: action "list" + scope "files" (ya da list_files).
 2) Dosyalari indir: action "read" + url + paths ["index.html","data.js","positions.json","build.py","notes.json"]. out_dir GECIRME - dosyalar otomatik scratchpad klasorune iner, orasi <D>. ICERIKLERINI OKUMA.
-3) cd <D> && for f in quotes.json merge_notes.py inline_data.py apply_trades.py ISTIHBARAT.md; do curl -sS -o $f <REPO>/$f; done
+3) cd <D> && for f in quotes.json merge_notes.py inline_data.py apply_trades.py tax_de.py ISTIHBARAT.md; do curl -sS -o $f <REPO>/$f; done
    (<REPO> = yukaridaki adres). quotes.json'un "asof" alani 14 saatten eskiyse YAYINLAMA - GitHub Actions calismamis demektir; adim 11'deki bildirimi bu hatayla gonder ve dur.
 3c) BEKLEYEN ISLEM KUYRUGU: ArtifactData (action:"query", url=ARTIFACT, collection:"trades",
     query:{"where":[["status","eq","pending"]]}) ile bekleyen islemleri oku (SADECE okuma,
