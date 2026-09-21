@@ -160,5 +160,7 @@
  "fx": [
   "EURUSD=X"
  ],
- "crypto": []
+ "crypto": [
+  "ETH-EUR"
+ ]
 }
