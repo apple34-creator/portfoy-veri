@@ -162,5 +162,9 @@
  ],
  "crypto": [
   "ETH-EUR"
+ ],
+ "benchmarks": [
+  "SPY",
+  "URTH"
  ]
 }

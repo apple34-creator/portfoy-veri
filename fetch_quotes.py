@@ -211,12 +211,30 @@ def main():
                 "chg_1y_pct": pct(price, closes[0]) if len(closes) > 200 else None,
             }
 
+    # Endeks kiyasi (Faz 13d): SPY (S&P 500), URTH (MSCI World). Alis gunlerindeki fiyat
+    # lazim oldugu icin kur gibi 5 yillik gunluk seri saklanir. Cekilemezse onceki devralinir.
+    benchmarks = dict(prev.get("benchmarks") or {})
+    bsyms = cfg.get("benchmarks") or []
+    if bsyms:
+        bb = fetch_spark(bsyms, "5y", "1d")
+        for b in bsyms:
+            d = bb.get(b)
+            if not d:
+                if b in benchmarks:
+                    benchmarks[b] = dict(benchmarks[b], stale=True)
+                continue
+            benchmarks[b] = {
+                "price": round(float(d["meta"].get("regularMarketPrice") or d["closes"][-1]), 4),
+                "ts": d["ts"],
+                "closes": [round(c, 4) for c in d["closes"]],
+            }
+
     doc = {
         "asof": datetime.now(timezone.utc).isoformat(timespec="minutes"),
         "mode": a.mode,
         "source": "Yahoo Finance spark (GitHub Actions)",
         "quotes": quotes, "series": series, "candidates": candidates,
-        "fx": fx, "crypto": crypto,
+        "fx": fx, "crypto": crypto, "benchmarks": benchmarks,
     }
     with open(a.out, "w", encoding="ascii") as f:
         json.dump(doc, f, ensure_ascii=True, separators=(",", ":"))
