@@ -120,7 +120,14 @@ Hangi adaylar bu hafta: mevcut durumu oku
 - Sonra `asof` tarihi 28 gunden eski olanlardan EN ESKI 10 tanesi.
 - Arti bu hafta kazanc aciklamasi yapmis ya da buyuk haberi (hisse ihraci, satin alma) olan aday.
 
-Her aday icin arama deseni: "<Sirket> latest quarter results net income free cash flow shares
+ONCE sayisal olgular (sorular 1-3) icin: "stockanalysis <SEMBOL> statistics" aramasi — stockanalysis.com
+istatistik sayfasi TTM "Net Income", "Operating Income", "Free Cash Flow", "Cash & Cash Equivalents" ve
+"Shares Change (YoY)" degerlerini tek yerde verir; `share_change_pct` bu "Shares Change (YoY)" degeridir
+ve BOS BIRAKILMAZ (22 Eyl kosusunda 32/35 bos kalmisti). Ceyreklik bulten tek basina yetmez: kural TTM (son 12 ay).
+Dikkat: sembol baska sirkete gecmis olabilir (GOLD artik Gold.com; Barrick = B). Sayfa basligindaki sirket adi
+`name` ile ayni degilse yazma, notta belirt.
+
+Her aday icin ek arama deseni: "<Sirket> latest quarter results net income free cash flow shares
 outstanding" (son 10-Q/10-K, sirketin yatirimci iliskileri sayfasi, Reuters/CNBC/Yahoo haberi,
 stockanalysis.com / macrotrends gibi veri siteleri). Musteri yogunlugu gerekiyorsa:
 "<Sirket> 10-K customer accounted for percent of revenue". Buyuk sirketlerde (KO, MSFT gibi)
@@ -128,11 +135,12 @@ stockanalysis.com / macrotrends gibi veri siteleri). Musteri yogunlugu gerekiyor
 (LMT, NOC, BA gibi savunma sirketlerinde payi yaz).
 
 Dort soru ve alanlar (notes-yeni.json -> `candidates.SEMBOL.health`):
-1. Kar ediyor mu? `profit`: son 12 ay (TTM) GAAP net kar pozitifse `"kar"`; net zarar ama
-   faaliyet kari pozitifse `"faaliyet_kari"`; ikisi de negatifse `"zarar"`.
+1. Kar ediyor mu? `profit`: TTM faaliyet kari (operating income) ve GAAP net kar ikisi de pozitifse
+   `"kar"`; faaliyet kari pozitif ama net zarar (orn. deger dusuklugu) ise `"faaliyet_kari"`; faaliyet
+   kari negatifse `"zarar"` (tek seferlik satis kazanciyla net kar pozitif olsa bile — notta belirt).
 2. Nakit kac yil yeter? Son 12 ay serbest nakit akisi (isletme nakdi - yatirim harcamasi)
    pozitifse `fcf_positive: true` (cash_years yazma). Negatifse `fcf_positive: false` ve
-   `cash_years` = (nakit + kisa vadeli yatirimlar) / yillik nakit yakimi, 1 ondalik.
+   `cash_years` = nakit / |TTM serbest nakit akisi|, 1 ondalik, en fazla 10 (10+ ise 10 yaz).
 3. Hisse sayisi 12 ayda % kac degisti? `share_change_pct`: seyreltilmis hisse sayisinin bir yil
    onceki ceyrege gore degisimi, 1 ondalik (geri alim yapanlarda eksi).
 4. En buyuk musteri payi? `top_customer_pct`: en buyuk tek musterinin gelir payi (%). 10-K
