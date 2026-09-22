@@ -160,6 +160,20 @@ Sema (bilinmeyen alan `null`, UYDURMA YOK; kaynak zorunlu):
 - Aday sayisi cok olursa ONCE 13 pozisyonun haberleri ve istihbarat biter, karne sonra gelir;
   butce biterse kalan adaylar sonraki haftaya kalir (sorun degil, sayfa "N/35 puanlandi" yazar).
 
+### Pozisyon sagligi (Faz 14d, yalnizca MOD: pazar)
+
+Ayni dort soru, portfoydeki 7 kucuk sirket icin: JOBY, ASPI, OKLO, IBRX, UUUU, SOFI, TEM.
+Sayfada kartin altindaki "Saglik" satirina gider; puan yok, yalnizca cevaplar.
+- Mevcut durum: `python3 -c "import json;p=json.load(open('notes.json'))['positions'];[print(s,(p.get(s,{}).get('health') or {}).get('asof','YOK')) for s in 'JOBY ASPI OKLO IBRX UUUU SOFI TEM'.split()]"`
+- `asof` 28 gunden eskiyse YA DA bu hafta kazanc aciklamasi / hisse ihraci varsa tazele
+  (ayni "stockanalysis <SEMBOL> statistics" aramasi; aday karnesinden ONCE yapilir).
+- Yazilacak yer: `notes-yeni.json -> positions.SEMBOL.health` (aday sema + bir ek alan):
+  `first_profit`: zarar eden sirkette ilk kar/ilk anlamli gelir ne zaman bekleniyor — kaynakli kisa
+  Turkce ifade (orn. "Ilk ticari elektrik geliri 2028'den once beklenmiyor"); bulunamazsa `null`.
+- Banka (SOFI) icin serbest nakit akisi kredi verme yuzunden negatif gorunur: `fcf_positive:false`,
+  `cash_years:null`, notta belirt.
+- `positions.SEMBOL` altina yalnizca `health` yazmak `why`/`analyst`'i silmez (merge alan bazinda).
+
 ## MOD: cumartesi (hafta sonu, en fazla 8 WebSearch)
 
 Sabah modu + hafta sonu cikan sirket haberleri icin en fazla 3 sirket bazli arama, artiyla
