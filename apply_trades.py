@@ -4,12 +4,17 @@
 Bekleyen alim/satim kuyrugunu positions.json'a uygular.
 
 Kullanim:
-    python3 apply_trades.py positions.json trades.json --out positions.json --results results.json
+    python3 apply_trades.py positions.json trades.json --out positions.json --results results.json [--quotes quotes.json]
 
 Girdi : positions.json (mevcut pozisyonlar)
         trades.json     ({"trades": [{"id","symbol","side":"buy"|"sell","shares","price",
                          "note","submitted_at"}, ...]}) -- note/submitted_at opsiyonel ama
                          KARAR GUNLUGU icin onemli, rutin promptu bunlari da kopyalar.
+        --quotes        quotes.json (opsiyonel). Verilirse yeni "lots" kaydinin price_eur'u
+                         alim gunundeki EURUSD kapanisiyla hesaplanir (tax_de.fx_on). Verilmezse
+                         price_eur None birakilir -- build.py build_tax zaten pe None oldugunda
+                         ayni fx_on hesabini kendisi yapiyor, tek fark bu script'in de ayni
+                         degeri positions.json'a KALICI yazmasi (denetim/gorunurluk icin).
 Cikti : positions.json (guncellenmis, --out ile ayni ya da farkli dosyaya; basarili her islem
                         "decisions" dizisine de eklenir -- karar gunlugu)
         results.json    ({"applied": [...], "errors": [...], "skipped": [...],
@@ -18,13 +23,22 @@ Cikti : positions.json (guncellenmis, --out ile ayni ya da farkli dosyaya; basar
 Kurallar:
 - Yalnizca positions.json'da ZATEN VAR olan semboller islenir. Yeni sembol eklemek bu
   kuyruktan desteklenmiyor (elle yapilmali, DEVAM-PROMPTU.md'deki adimlar gecerli).
-- buy: adet artar, ortalama maliyet agirlikli ortalama ile yeniden hesaplanir.
+- buy: adet artar, ortalama maliyet agirlikli ortalama ile yeniden hesaplanir. "lots" varsa
+  (yoksa olusturulmaz -- eski pozisyonlarda tam alim gecmisi yok) yeni bir lot
+  {date, shares, price_usd, price_eur} olarak eklenir.
 - sell: adet azalir, ortalama maliyet DEGISMEZ (kalan hisselerin maliyeti ayni kalir).
-  Satilan adet mevcuttan fazlaysa islem reddedilir (error).
+  Satilan adet mevcuttan fazlaysa islem reddedilir (error). "lots" varsa FIFO (en eski alim
+  once) ile tuketilir, tax_de.fifo_consume ile ayni mantik -- build.py'nin build_tax'ta
+  yaptigi FIFO ile TUTARLI kalmasi icin.
 - Adet 0'a (1e-4 tolerans) inerse pozisyon TAMAMEN kaldirilir.
 - avg_cost_is_estimate bayragi bu script tarafindan DEGISTIRILMEZ -- eski pay hala
   tahmine dayali oldugu icin "artik gercek" denemez; bu ayri bir P0 is (gercek maliyetleri
   toplu girmek).
+- LOTS TUTARLILIGI: build.py build_tax, sum(lots.shares) pos.shares'e esit degilse lots'u
+  TAMAMEN yok sayip tahmine duser (yanlis EUR rakami gostermemek icin). Bu yuzden her
+  buy/sell'de lots'un toplami pos.shares ile birebir esitlenir; lots hic yoksa (eski
+  pozisyon) dokunulmaz, olusturulmaz -- kismi/varsayimsal lot uydurmak yanlis vergi
+  rakamina yol acar.
 - KARAR GUNLUGU: basarili her islem, positions.json'daki "decisions" dizisine
   {id, date, symbol, side, shares, price, note} olarak EKLENIR (mevcut kayitlar silinmez,
   yalnizca son 200 tutulur). Sayfa bu listeyi "Karar Gunlugu" bolumunde, o gunden bugune
@@ -37,14 +51,45 @@ Kurallar:
 """
 
 import argparse, json, sys
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
+
+try:
+    import tax_de
+except ImportError:
+    tax_de = None
 
 EPS = 1e-4
 MAX_PROCESSED_IDS = 300
 MAX_DECISIONS = 200
 
 
-def apply_one(cfg_positions, trade):
+def trade_date_str(trade):
+    """Islemin karar/lot tarihi: submitted_at (girildigi an) varsa o, yoksa bugun (UTC)."""
+    submitted = str(trade.get("submitted_at") or "")
+    if len(submitted) >= 10:
+        return submitted[:10]
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
+def price_eur_on(day_str, price_usd, fx):
+    """day_str (YYYY-MM-DD) icin USD fiyati EUR'a cevirir (tax_de.fx_on, alim gunu kuru).
+
+    fx ya da tax_de yoksa None doner -- build.py build_tax pe None oldugunda ayni hesabi
+    kendisi yapiyor, lot'un GEREKSIZ yere tahmini/yanlis bir deger tasimasindansa bos kalmasi
+    daha guvenli.
+    """
+    if not fx or tax_de is None:
+        return None
+    try:
+        rate, _ = tax_de.fx_on(date.fromisoformat(day_str), fx)
+    except (ValueError, TypeError):
+        return None
+    if not rate:
+        return None
+    return round(price_usd / rate, 6)
+
+
+def apply_one(cfg_positions, trade, fx=None):
     sym = trade.get("symbol")
     side = trade.get("side")
     shares = trade.get("shares")
@@ -67,6 +112,7 @@ def apply_one(cfg_positions, trade):
     pos = cfg_positions[idx]
     old_shares = float(pos["shares"])
     old_avg = float(pos["avg_cost"])
+    day_str = trade_date_str(trade)
 
     if side == "buy":
         new_shares = old_shares + shares
@@ -74,6 +120,12 @@ def apply_one(cfg_positions, trade):
         pos["shares"] = round(new_shares, 6)
         pos["avg_cost"] = round(new_avg, 4)
         removed = False
+        if pos.get("lots"):
+            pos["lots"].append({
+                "date": day_str, "shares": round(shares, 6),
+                "price_usd": round(price, 6),
+                "price_eur": price_eur_on(day_str, price, fx),
+            })
     else:  # sell
         if shares > old_shares + EPS:
             return None, "yetersiz adet (portfoyde %.4g var, %.4g satilmak isteniyor)" % (old_shares, shares)
@@ -84,6 +136,15 @@ def apply_one(cfg_positions, trade):
         else:
             pos["shares"] = round(new_shares, 6)
             # avg_cost degismez -- satis kalan hisselerin maliyet tabanini degistirmez.
+        if not removed and pos.get("lots"):
+            if tax_de is not None:
+                _, rest = tax_de.fifo_consume(pos["lots"], shares)
+                pos["lots"] = rest
+            else:
+                # tax_de yok (import basarisiz) -- yanlis/tahmini bir FIFO uydurmaktansa
+                # lots'u bosalt, build.py build_tax zaten (toplam uyusmuyor -> []) ayni
+                # sonuca duser.
+                pos["lots"] = []
 
     return {"symbol": sym, "side": side, "shares": shares, "price": price,
             "removed": removed,
@@ -97,9 +158,7 @@ def decision_record(tid, trade):
     Tarih olarak islemin girildigi an (submitted_at) tercih edilir; yoksa bugun. Boylece
     kuyrukta bir gun bekleyen bir islem, gercekten karar verildigi gunle gunluge girer.
     """
-    submitted = str(trade.get("submitted_at") or "")
-    date = submitted[:10] if len(submitted) >= 10 else datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    rec = {"id": tid, "date": date, "symbol": trade.get("symbol"),
+    rec = {"id": tid, "date": trade_date_str(trade), "symbol": trade.get("symbol"),
            "side": trade.get("side"), "note": (trade.get("note") or "").strip()[:300]}
     try:
         rec["shares"] = round(float(trade.get("shares")), 6)
@@ -115,12 +174,22 @@ def main():
     ap.add_argument("trades")
     ap.add_argument("--out", default=None, help="Varsayilan: positions.json'un ustune yazar.")
     ap.add_argument("--results", default="results.json")
+    ap.add_argument("--quotes", default=None,
+                     help="quotes.json (opsiyonel) -- verilirse yeni lot'larin price_eur'u fx.EURUSD ile hesaplanir.")
     a = ap.parse_args()
     out_path = a.out or a.positions
 
     cfg = json.load(open(a.positions, encoding="utf-8"))
     trades_doc = json.load(open(a.trades, encoding="utf-8"))
     trades = trades_doc.get("trades") or []
+
+    fx = None
+    if a.quotes:
+        try:
+            qdoc = json.load(open(a.quotes, encoding="utf-8"))
+            fx = (qdoc.get("fx") or {}).get("EURUSD")
+        except (OSError, ValueError):
+            fx = None
 
     seen = list(cfg.get("processed_trade_ids") or [])
     seen_set = set(seen)
@@ -133,7 +202,7 @@ def main():
         if tid and tid in seen_set:
             skipped.append(tid)
             continue
-        result, err = apply_one(cfg["positions"], t)
+        result, err = apply_one(cfg["positions"], t, fx=fx)
         if err:
             errors.append({"id": tid, "symbol": t.get("symbol"), "reason": err})
         else:

@@ -15,7 +15,7 @@ REPO: https://raw.githubusercontent.com/apple34-creator/portfoy-veri/main
       <D>/trades.json'a yaz (note KARAR GUNLUGU icin sart, bos bile olsa alani gec):
       {"trades":[{"id":"...","symbol":"...","side":"buy|sell","shares":...,"price":...,
                   "note":"...","submitted_at":"..."}, ...]}
-    - python3 apply_trades.py positions.json trades.json --out positions.json --results results.json
+    - python3 apply_trades.py positions.json trades.json --out positions.json --results results.json --quotes quotes.json
       (script kendisi daha once islenmis id'leri positions.json'daki processed_trade_ids
       listesinden tanir ve atlar; tekrar isleme riski yok, ArtifactData'ya YAZMAYA GEREK YOK.)
     - <D>/results.json oku, adim 10'daki ozete kac islem uygulandigini/hata verdigini ekle.
