@@ -104,7 +104,53 @@ uzman-analist-yorumcularinin dedigine bak. Nasil:
    - Satis/alis onermez; karar Vedat'in. Kaynak zorunlu. Dokunan haber yoksa hicbir sey yazma.
    - Bu adimdan gelen uyarilar 6 uyari sinirina dahil ama siralamada ayni seviyedeki diger
      uyarilarin onune gecer.
-6. `alerts` guncellenir.
+6. ADAY KARNESI (Faz 14c, haftada bir yalnizca burada) — asagidaki "Aday karnesi" bolumu.
+7. `alerts` guncellenir.
+
+## Aday karnesi (yalnizca MOD: pazar)
+
+Amac: 35 aday hisseyi AYNI dort saglik sorusuyla, kaynakli ve tarihli olarak olcmek. Puani
+`build.py` hesaplar (saglik 60 + momentum 20 + analist hedefi 20); rutin YALNIZCA olgulari yazar,
+puan yazmaz, "al/sat" ya da "en iyisi bu" gibi ifade kullanmaz.
+
+Hangi adaylar bu hafta: mevcut durumu oku
+`python3 -c "import json;c=json.load(open('notes.json')).get('candidates',{});[print(s,(v.get('health') or {}).get('asof','YOK')) for s,v in sorted(c.items())]"`
+- `health` alani HIC OLMAYANLARIN hepsi (ilk kosuda 35'i de) — ek arama butcesi: aday basina 1,
+  gerekirse 2 WebSearch.
+- Sonra `asof` tarihi 28 gunden eski olanlardan EN ESKI 10 tanesi.
+- Arti bu hafta kazanc aciklamasi yapmis ya da buyuk haberi (hisse ihraci, satin alma) olan aday.
+
+Her aday icin arama deseni: "<Sirket> latest quarter results net income free cash flow shares
+outstanding" (son 10-Q/10-K, sirketin yatirimci iliskileri sayfasi, Reuters/CNBC/Yahoo haberi,
+stockanalysis.com / macrotrends gibi veri siteleri). Musteri yogunlugu gerekiyorsa:
+"<Sirket> 10-K customer accounted for percent of revenue". Buyuk sirketlerde (KO, MSFT gibi)
+10-K "hicbir musteri %10'u gecmiyor" diyorsa bunu kullan. ABD hukumeti de musteri sayilir
+(LMT, NOC, BA gibi savunma sirketlerinde payi yaz).
+
+Dort soru ve alanlar (notes-yeni.json -> `candidates.SEMBOL.health`):
+1. Kar ediyor mu? `profit`: son 12 ay (TTM) GAAP net kar pozitifse `"kar"`; net zarar ama
+   faaliyet kari pozitifse `"faaliyet_kari"`; ikisi de negatifse `"zarar"`.
+2. Nakit kac yil yeter? Son 12 ay serbest nakit akisi (isletme nakdi - yatirim harcamasi)
+   pozitifse `fcf_positive: true` (cash_years yazma). Negatifse `fcf_positive: false` ve
+   `cash_years` = (nakit + kisa vadeli yatirimlar) / yillik nakit yakimi, 1 ondalik.
+3. Hisse sayisi 12 ayda % kac degisti? `share_change_pct`: seyreltilmis hisse sayisinin bir yil
+   onceki ceyrege gore degisimi, 1 ondalik (geri alim yapanlarda eksi).
+4. En buyuk musteri payi? `top_customer_pct`: en buyuk tek musterinin gelir payi (%). 10-K
+   hicbir musterinin %10'u gecmedigini soyluyorsa `5` yaz. Bulamazsan `null`.
+
+Sema (bilinmeyen alan `null`, UYDURMA YOK; kaynak zorunlu):
+```json
+"candidates": {"LLY": {"health": {
+  "asof": "2026-09-27", "name": "Eli Lilly",
+  "profit": "kar", "fcf_positive": true, "cash_years": null,
+  "share_change_pct": -0.4, "top_customer_pct": 18,
+  "note": "1 cumle Turkce, tarafsiz: rakamlarin hangi ceyrege ait oldugu (orn. 'Ç2 2026 10-Q').",
+  "source_url": "https://...", "source_label": "Kaynak"}}}
+```
+- Ayni sembol icin `analyst` da yaziliyorsa ikisi ayni nesnede yan yana durur
+  (`{"analyst": {...}, "health": {...}}`); merge_notes.py alan bazinda birlestirir.
+- Aday sayisi cok olursa ONCE 13 pozisyonun haberleri ve istihbarat biter, karne sonra gelir;
+  butce biterse kalan adaylar sonraki haftaya kalir (sorun degil, sayfa "N/35 puanlandi" yazar).
 
 ## MOD: cumartesi (hafta sonu, en fazla 8 WebSearch)
 
