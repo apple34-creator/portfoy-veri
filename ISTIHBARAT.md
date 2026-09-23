@@ -62,6 +62,8 @@ uzman-analist-yorumcularinin dedigine bak. Nasil:
 2. Bir risk aramasi: "stock offering OR lawsuit OR short report OR CEO resigns" + 13 sembolden
    gecen haftanin en oynaklari.
 3. Yalnizca `alerts` guncellenir (asagidaki Uyari listesi kurallari). `companies`e dokunma.
+4. Istisna: dun aksam aciklama yapip karti hala `yaklasan` kalan bir pozisyon varsa (aksam
+   kosusu kacirdi), "Bilanco kartlari" bolumune gore o karti `aciklandi`ya cevir (1 ek WebSearch).
 
 ## MOD: aksam (gunluk tam tarama, en fazla 13 WebSearch)
 
@@ -74,6 +76,8 @@ uzman-analist-yorumcularinin dedigine bak. Nasil:
    ayri bir "<SEMBOL> stock YouTube analysis" sorgusu — yalnizca habere yansimis/taninmis
    kaynaktan gelen tartismalari al.
 4. `alerts` + degisen `companies` + gerekiyorsa `calendar` guncellenir.
+5. BILANCO sonucu (asagidaki "Bilanco kartlari" bolumu, en fazla 3 ek WebSearch): bugun ya da
+   dun aciklama yapan pozisyonlarin kartini `aciklandi`ya cevir; eksik `reaction_pct`leri doldur.
 
 ## MOD: pazar (derin, en fazla 30 WebSearch)
 
@@ -83,7 +87,9 @@ uzman-analist-yorumcularinin dedigine bak. Nasil:
    "<SEMBOL> stock reddit OR X OR YouTube" taramasi, artiyla en cok konusulan 3-5 sirket
    icin ayrica "<Sirket> analyst OR expert opinion this week" sorgusu — taninmis kaynak
    kriterini uygula, isimsiz yorum alma.
-3. `calendar`: onumuzdeki 8 haftanin sirket katalizorleri (6-8 madde).
+3. `calendar`: onumuzdeki 8 haftanin sirket katalizorleri (6-8 madde). Her maddeye `impact`
+   ekle: `Y` (fiyati ya da tezi dogrudan etkileyebilir: bilanco, FDA/NRC/FAA karari, Fed),
+   `O` (sektor/rakip olayi, konferans), `D` (bilgi amacli).
 4. `radar`: portfoy temalarina yakin (yapay zeka, nukleer/uranyum, nadir toprak, uzay,
    eVTOL, fintech, biyoteknoloji) buyuyen 4-6 sirket/halka arz. Tavsiye dili yok.
    Anthropic gecerse "bu raporu yazan Claude, Anthropic'in urunu" notunu ekle.
@@ -105,6 +111,7 @@ uzman-analist-yorumcularinin dedigine bak. Nasil:
    - Bu adimdan gelen uyarilar 6 uyari sinirina dahil ama siralamada ayni seviyedeki diger
      uyarilarin onune gecer.
 6. ADAY KARNESI (Faz 14c, haftada bir yalnizca burada) — asagidaki "Aday karnesi" bolumu.
+6b. BILANCO KARTLARI (Faz 18) — asagidaki "Bilanco kartlari" bolumu (en fazla 6 ek WebSearch).
 7. `alerts` guncellenir.
 
 ## Aday karnesi (yalnizca MOD: pazar)
@@ -181,6 +188,47 @@ haftanin en cok hareket eden 1-2 sembolu icin "<SEMBOL> stock reddit OR X OR You
 (yukaridaki "Sosyal medya ve uzman gorusleri" bolumune gore, taninmis kaynak kriteriyle).
 `alerts` ve degisen `companies` guncellenir.
 
+## Bilanco kartlari (Faz 18; pazar olusturur, aksam sonuclandirir)
+
+Amac: her pozisyonun ceyreklik sonucundan ONCE neye bakilacagini, SONRA ne ciktigini ve tezi
+nasil etkiledigini tek kartta gostermek. Kartlar `intel.earnings` altinda, sembol basina bir
+kayit; yalnizca degisen semboller yazilir (merge sembol bazinda ezer, digerleri korunur).
+Mevcut kartlari oku:
+`python3 -c "import json;print(json.dumps(json.load(open('notes.json')).get('intel',{}).get('earnings',{}),ensure_ascii=False))"`
+
+**Yaklasan kart (MOD: pazar).** Onumuzdeki 14 gun icinde sonuc aciklayacak her pozisyon icin
+(tarih teyitli olmali — sirketin yatirimci iliskileri sayfasi ya da Nasdaq/Yahoo takvimi;
+teyit yoksa kart yazma, yalnizca `calendar`da "tarih teyit edilmedi" de):
+- `date` (YYYY-AA-GG), `timing`: `acilis_oncesi` | `kapanis_sonrasi` | `""` (bilinmiyorsa).
+- `expect`: `eps` (hisse basi kar, $), `revenue_m` (gelir, MILYON $ — 26,1 milyar = 26100),
+  `source` (site adi), `asof` (YYYY-AA-GG), `approx: true`. Ucretsiz sitelerdeki analist
+  ortalamasidir; bulamazsan alani `null` birak, UYDURMA.
+- `watch`: 2-3 kalem, o sirketin tezine gore ("asil bakilacak"): once `breaks_if`teki rakam
+  (ornek: PLTR gelir buyumesi %30 esigi, IBRX Anktiva geliri, SOFI 2026 beklentisi), sonra
+  sektorun ana gostergesi (yazilim: buyume + yillik beklenti; cip: veri merkezi geliri; banka/
+  fintech: uye sayisi + kredi kaybi; biyotek: urun geliri + nakit; erken asama: nakit + takvim).
+- `scenarios`: `iyi` / `orta` / `kotu` — her biri TEK cumle, rakamli ve teze bagli. Fiyat
+  tahmini yazma; "hisse su kadar yukselir" deme.
+- `status: "yaklasan"`, istersen `note` (tek cumle, ornek: "Gecen ceyrek beklentiyi asti ama
+  hisse %8 dustu").
+
+**Sonuclanmis kart (MOD: aksam; aksam kacirdiysa sonraki sabah).** Aciklama gunu/ertesi gun:
+- Kaynak SIRKETIN KENDI aciklamasi (basin bulteni ya da SEC 8-K) veya onu aktaran buyuk haber
+  ajansi. `source_url` + `source_label` zorunlu.
+- `actual`: `eps`, `revenue_m` (ayni birimler), `guidance` (sirketin ileriye donuk beklentisi,
+  tek cumle; vermediyse alani yazma). Dogrulanamayan rakam `null` kalir.
+- `thesis_effect`: `guclendi` | `zayifladi` | `notr` — SADECE `breaks_if` ve tez cumlesine
+  gore, fiyat tepkisine gore degil. `note`: neden (tek cumle).
+- `reaction_pct`: aciklamadan sonraki ilk tam islem gununun degisimi (`quotes.json`daki gunluk
+  degisim). Henuz yoksa `null` birak; sonraki kosu doldurur.
+- `status: "aciklandi"`. `expect` alanini KORU (karsilastirma icin; notes.json'dan tasi).
+- Sonuc `breaks_if` kosulunu karsiliyor ya da ona dokunuyorsa pazar modundaki "Tez kontrolu"
+  kurallariyla `kritik`/`yuksek` uyari da yaz (ayni kaynakla).
+
+Kurallar: kart icin ayrica "bilanco yaklasiyor" `yuksek` uyarisi YAZMA — kart yeterli.
+30 gunden eski sonuclanmis kartlari silmene gerek yok, sayfa gizler; bir sonraki ceyregin
+yaklasan karti ayni sembolun uzerine yazilir. Al/sat onermez; kart ne oldugunu anlatir.
+
 ## Uyari listesi kurallari
 
 - `alerts` HER ZAMAN TAM LISTE olarak yazilir (merge onu tumden degistirir): hala gecerli
@@ -200,7 +248,13 @@ haftanin en cok hareket eden 1-2 sembolu icin "<SEMBOL> stock reddit OR X OR You
               "source_url":"https://...","source_label":"Kaynak"}],
   "companies": {"OKLO": {"ceo":"Jacob DeWitte","tone":"olumlu|notr|dikkat|acil",
                 "items":[{"date":"11 Eyl","text":"1-2 cumle","source_url":"...","source_label":"..."}]}},
-  "calendar": [{"date":"24 Eyl","text":"... (SEMBOLLER)"}],
+  "calendar": [{"date":"24 Eyl","text":"... (SEMBOLLER)","impact":"Y|O|D"}],
+  "earnings": {"TSLA": {"date":"2026-10-21","timing":"kapanis_sonrasi","status":"yaklasan|aciklandi",
+               "expect":{"eps":0.55,"revenue_m":26100,"source":"Nasdaq","asof":"2026-10-12","approx":true},
+               "watch":["...","..."],"scenarios":{"iyi":"...","orta":"...","kotu":"..."},
+               "actual":{"eps":0.61,"revenue_m":25800,"guidance":"..."},
+               "thesis_effect":"guclendi|zayifladi|notr","reaction_pct":-4.2,"note":"...",
+               "source_url":"https://...","source_label":"..."}},
   "radar": [{"name":"...","tag":"Tema · baglam","text":"...","source_url":"...","source_label":"..."}]
 }
 ```
@@ -208,6 +262,7 @@ haftanin en cok hareket eden 1-2 sembolu icin "<SEMBOL> stock reddit OR X OR You
 - `companies`: yalnizca degisen semboller yazilir; bir sembol yazilirsa `items` o sembolun
   TAM listesidir — en yeni 3 madde, yeni once (eski maddeleri notes.json'dan tasi).
 - `calendar`/`radar`: yalnizca degistiyse yaz; yazarsan tam liste.
+- `earnings`: yalnizca degisen semboller; yazdigin sembolun kaydi TAM olmali (expect'i tasi).
 - Metinler Turkce, sayilar kaynaktaki gibi. Fiyat yazma — fiyatlarin kaynagi quotes.json.
 
 ## Bildirim kurali (PushNotification)
@@ -215,4 +270,6 @@ haftanin en cok hareket eden 1-2 sembolu icin "<SEMBOL> stock reddit OR X OR You
 Onceki `alerts` basliklarinda olmayan yeni bir `kritik` uyari varsa bildirim su sekilde
 BASLAR: `ACIL: <baslik> (<semboller>) — ` ve devaminda normal ozet. Yeni `yuksek` varsa
 `ONEMLI: <baslik> — `. Yoksa normal ozet ve sonunda "Yeni acil haber yok."
+Bu kosuda bir kart `aciklandi`ya dondiyse ACIL/ONEMLI kismindan sonra kisa bir
+`BILANCO: <SEMBOL> kar ✓/✗ gelir ✓/✗, tez <guclendi|zayifladi|notr> — ` ekle.
 Tek satir, ~200 karakter; en onemli bilgi basta.
