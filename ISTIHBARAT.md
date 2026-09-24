@@ -103,6 +103,10 @@ uzman-analist-yorumcularinin dedigine bak. Nasil:
 4. `radar`: portfoy temalarina yakin (yapay zeka, nukleer/uranyum, nadir toprak, uzay,
    eVTOL, fintech, biyoteknoloji) buyuyen 4-6 sirket/halka arz. Tavsiye dili yok.
    Anthropic gecerse "bu raporu yazan Claude, Anthropic'in urunu" notunu ekle.
+   Halka acik sirketlerde `symbol` alanini yaz (orn. `"symbol":"USAR"`; borsa kodu dogrulanamiyorsa
+   yazma). Sayfa bu sembolle kartin altina 1 yillik fiyat grafigi cizer; veri `quotes.json`
+   `radar` alanindan gelir. `quotes.json`'da `radar` altinda olmayan yeni bir sembol yazdiysan
+   bildirimin sonuna "RADAR: tickers.json'a eklenmeli: SEMBOL" ekle (repo'ya rutin yazamaz).
 5. TEZ BOZULMA KONTROLU (Faz 13c, haftada bir yalnizca burada): Vedat her pozisyon icin
    "neden tutuyorum" (`thesis`) ve "sunu gorursem yanilmisim" (`breaks_if`) yazdi. Oku:
    `python3 -c "import json;p=json.load(open('positions.json'));[print(x['symbol'],'|',x.get('breaks_if')) for x in p['positions']+p.get('crypto',[]) if x.get('breaks_if')]"`
@@ -265,7 +269,7 @@ yaklasan karti ayni sembolun uzerine yazilir. Al/sat onermez; kart ne oldugunu a
                "actual":{"eps":0.61,"revenue_m":25800,"guidance":"..."},
                "thesis_effect":"guclendi|zayifladi|notr","reaction_pct":-4.2,"note":"...",
                "source_url":"https://...","source_label":"..."}},
-  "radar": [{"name":"...","tag":"Tema · baglam","text":"...","source_url":"...","source_label":"..."}]
+  "radar": [{"name":"...","symbol":"USAR","tag":"Tema · baglam","text":"...","source_url":"...","source_label":"..."}]
 }
 ```
 

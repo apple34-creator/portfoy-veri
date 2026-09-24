@@ -166,5 +166,11 @@
  "benchmarks": [
   "SPY",
   "URTH"
- ]
+ ],
+ "radar": [
+  "USAR",
+  "XE",
+  "FISN"
+ ],
+ "_radar_comment": "Radar (intel.radar) bolumundeki halka acik sirketler. Sayfada kartin altina 1 yillik fiyat grafigi cizilir. Radar'a yeni halka acik sirket girince sembolu buraya ekle."
 }

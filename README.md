@@ -28,7 +28,7 @@ Bu repoda **portföy bilgisi yoktur**: adet, maliyet, kâr/zarar hiç bulunmaz.
 | Dosya | Ne yapar |
 |---|---|
 | `fetch_quotes.py` | Yahoo Finance'ten fiyat + 6 aylık kapanış serisi + 52 hafta aralığı çeker |
-| `tickers.json` | Semboller (13 pozisyon + 35 aday hisse). Yeni hisse eklenince burası da güncellenir |
+| `tickers.json` | Semboller (13 pozisyon + 35 aday hisse + Radar'daki halka açık şirketler). Yeni hisse eklenince burası da güncellenir |
 | `quotes.json` | Çıktı — her koşuda Actions tarafından güncellenir |
 | `.github/workflows/quotes.yml` | Zamanlama |
 

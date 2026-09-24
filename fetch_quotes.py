@@ -11,7 +11,7 @@ uzerinden okuyup (o adres sandbox'tan erisilebilir) hesaplari yapar.
 
 Girdi : tickers.json  (semboller -- pozisyon adedi/maliyeti ICERMEZ)
         quotes.json   (varsa; pazar disi kosularda aday listesi devralinir)
-Cikti : quotes.json   {asof, mode, quotes, series, candidates}
+Cikti : quotes.json   {asof, mode, quotes, series, candidates, fx, crypto, benchmarks, radar}
 
 Kullanim: python3 fetch_quotes.py --mode aksam
 Sadece Python standart kutuphanesi + curl. Ek paket gerekmez.
@@ -229,21 +229,45 @@ def main():
                 "closes": [round(c, 4) for c in d["closes"]],
             }
 
+    # Radar grafigi (Faz 21): intel.radar'daki halka acik sirketlerin 1 yillik gunluk serisi.
+    # Az sembol, her kosuda cekilir; cekilemezse onceki seri devralinir. Listeden cikan sembol duser.
+    radar = {}
+    rsyms = cfg.get("radar") or []
+    if rsyms:
+        rb = fetch_spark(rsyms, "1y", "1d")
+        for r in rsyms:
+            d = rb.get(r)
+            if not d:
+                old = (prev.get("radar") or {}).get(r)
+                if old:
+                    radar[r] = dict(old, stale=True)
+                continue
+            closes, meta = list(d["closes"]), d["meta"]
+            price = float(meta.get("regularMarketPrice") or closes[-1])
+            closes[-1] = price
+            radar[r] = {
+                "price": round(price, 4),
+                "chg_pct": pct(price, closes[0]),
+                "full_year": len(closes) > 200,
+                "ts": d["ts"],
+                "closes": [round(c, 4) for c in closes],
+            }
+
     doc = {
         "asof": datetime.now(timezone.utc).isoformat(timespec="minutes"),
         "mode": a.mode,
         "source": "Yahoo Finance spark (GitHub Actions)",
         "quotes": quotes, "series": series, "candidates": candidates,
-        "fx": fx, "crypto": crypto, "benchmarks": benchmarks,
+        "fx": fx, "crypto": crypto, "benchmarks": benchmarks, "radar": radar,
     }
     with open(a.out, "w", encoding="ascii") as f:
         json.dump(doc, f, ensure_ascii=True, separators=(",", ":"))
         f.write("\n")
 
-    print("%s yazildi | mod=%s | %d sembol | %d aday | kur: %s | kripto: %d | %s"
+    print("%s yazildi | mod=%s | %d sembol | %d aday | kur: %s | kripto: %d | radar: %d | %s"
           % (a.out, a.mode, len(quotes), len(candidates),
              ", ".join("%s=%s" % (k, v["rate"]) for k, v in fx.items()) or "yok",
-             len(crypto), doc["asof"]))
+             len(crypto), len(radar), doc["asof"]))
     for s in syms:
         q = quotes.get(s)
         if q:
