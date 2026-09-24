@@ -90,6 +90,16 @@ uzman-analist-yorumcularinin dedigine bak. Nasil:
 3. `calendar`: onumuzdeki 8 haftanin sirket katalizorleri (6-8 madde). Her maddeye `impact`
    ekle: `Y` (fiyati ya da tezi dogrudan etkileyebilir: bilanco, FDA/NRC/FAA karari, Fed),
    `O` (sektor/rakip olayi, konferans), `D` (bilgi amacli).
+   SABIT IKI MADDE (Faz 20, Vedat'in vergisini dogrudan etkiler; karar cikana kadar her
+   pazar listede kalir, `impact: "Y"`; her biri icin 1 WebSearch, gelisme varsa metni guncelle):
+   - "Kripto vergi tasarisi: 1 yil muafiyetinin 2027'den sonra alinanlar icin kalkmasi -- Bundestag
+     sureci (TUM PORTFOY: ETH)". Tarih: bilinen bir sonraki adim (kabine/Bundestag okumasi) ya da "izle".
+     Sorgu: "Krypto Haltefrist Abschaffung Bundestag aktuell". Resmi karar cikarsa `yuksek` uyari da yaz.
+   - "Anayasa Mahkemesi: hisse zararlarinin yalnizca hisse karindan dusulmesi kurali (2 BvL 3/21)".
+     Sorgu: "Bundesverfassungsgericht Aktienverlustverrechnung Entscheidung". Karar aciklanirsa `yuksek`
+     uyari yaz (tax_de.py STOCK_LOSS_ISOLATED ayari degisebilir -- Vedat'a not dus).
+   Bu iki madde 6-8 madde sinirina dahil degildir. X/sosyal medyadaki "karar kesinlesti" iddialarini
+   resmi kaynak (bundestag.de, bundesverfassungsgericht.de, buyuk haber ajansi) olmadan yazma.
 4. `radar`: portfoy temalarina yakin (yapay zeka, nukleer/uranyum, nadir toprak, uzay,
    eVTOL, fintech, biyoteknoloji) buyuyen 4-6 sirket/halka arz. Tavsiye dili yok.
    Anthropic gecerse "bu raporu yazan Claude, Anthropic'in urunu" notunu ekle.
