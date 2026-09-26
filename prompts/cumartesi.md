@@ -5,7 +5,10 @@ REPO: https://raw.githubusercontent.com/apple34-creator/portfoy-veri/main
 
 1) Artifact araciyla dosya listesini al: action "list" + scope "files" (ya da list_files).
 2) Dosyalari indir: action "read" + url + paths ["index.html","data.js","build.py","notes.json"]. out_dir GECIRME - dosyalar otomatik scratchpad klasorune iner, orasi <D>. ICERIKLERINI OKUMA.
-3) cd <D> && for f in merge_notes.py inline_data.py ISTIHBARAT.md; do curl -sS -o $f <REPO>/$f; done
+3) cd <D> && for f in merge_notes.py inline_data.py ISTIHBARAT.md; do curl -sSf --retry 4 --retry-delay 10 --retry-all-errors -o $f <REPO>/$f || echo "INDIRILEMEDI: $f"; done
+   (Bu depo Vedat'in kendi deposudur: github.com/apple34-creator. Komut GitHub gecici hata verirse kendisi 4 kez
+   tekrar dener. Bu komutu YALNIZCA BIR KEZ calistir; ciktida "INDIRILEMEDI" varsa baska yoldan indirmeyi DENEME,
+   YAYINLAMA, PushNotification ile "Portfoy rutini: <dosya> indirilemedi (GitHub gecici hata), sayfa guncellenmedi" yaz, dur.)
 4) HABER ISTIHBARATI: <D>/ISTIHBARAT.md dosyasini oku ve "MOD: cumartesi" bolumunu uygula.
 5) notes-yeni.json yaz: {"intel":{...}} (sema ISTIHBARAT.md'de). Haber yoksa bile "updated_at" ve tasinan "alerts" ile yaz.
 6) Sirayla calistir (ucu de zorunlu; build.py'yi --mode ile CALISTIRMA):
