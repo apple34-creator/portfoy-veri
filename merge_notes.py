@@ -56,6 +56,11 @@ def main():
             if delta["intel"].get(key):
                 intel.setdefault(key, {}).update(delta["intel"][key])
 
+    # Hisse notlari (Faz 21): sembol bazinda tumden degisir -- build.py merge_briefs ile ayni.
+    for sym, b in (delta.get("briefs") or {}).items():
+        if isinstance(b, dict) and b:
+            arsiv.setdefault("briefs", {})[sym] = b
+
     for key in ("macro_summary", "macro_calendar"):
         if delta.get(key):
             arsiv[key] = delta[key]

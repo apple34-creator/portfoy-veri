@@ -78,6 +78,7 @@ uzman-analist-yorumcularinin dedigine bak. Nasil:
 4. `alerts` + degisen `companies` + gerekiyorsa `calendar` guncellenir.
 5. BILANCO sonucu (asagidaki "Bilanco kartlari" bolumu, en fazla 3 ek WebSearch): bugun ya da
    dun aciklama yapan pozisyonlarin kartini `aciklandi`ya cevir; eksik `reaction_pct`leri doldur.
+6. HISSE NOTLARI (gunluk): asagidaki "Hisse notlari" bolumu (en fazla 3 ek WebSearch).
 
 ## MOD: pazar (derin, en fazla 30 WebSearch)
 
@@ -126,6 +127,7 @@ uzman-analist-yorumcularinin dedigine bak. Nasil:
      uyarilarin onune gecer.
 6. ADAY KARNESI (Faz 14c, haftada bir yalnizca burada) — asagidaki "Aday karnesi" bolumu.
 6b. BILANCO KARTLARI (Faz 18) — asagidaki "Bilanco kartlari" bolumu (en fazla 6 ek WebSearch).
+6c. HISSE NOTLARI (Faz 21, haftalik) — asagidaki "Hisse notlari" bolumu (19 sembol, en fazla 11 ek WebSearch).
 7. `alerts` guncellenir.
 
 ## Aday karnesi (yalnizca MOD: pazar)
@@ -242,6 +244,64 @@ teyit yoksa kart yazma, yalnizca `calendar`da "tarih teyit edilmedi" de):
 Kurallar: kart icin ayrica "bilanco yaklasiyor" `yuksek` uyarisi YAZMA — kart yeterli.
 30 gunden eski sonuclanmis kartlari silmene gerek yok, sayfa gizler; bir sonraki ceyregin
 yaklasan karti ayni sembolun uzerine yazilir. Al/sat onermez; kart ne oldugunu anlatir.
+
+## Hisse notlari (Faz 21; pazar haftalik, aksam gunluk)
+
+Vedat her pozisyon, ETH ve karnenin en iyi 5 adayi icin kisa bir not istiyor: gundem
+(siyaset, savas, petrol, faiz, ticaret/tarife, toplum, duzenleme), CEO aciklamasi, alisin
+riski, satisin riski. Karari Vedat verir. RAKAMLARI YAZMA: 1 hafta / 1 ay / 52 hafta
+degisimi ve kurallarindan cikan euro tutarlari (sinir asimi, zarar kes kaybi, risk butcesi)
+build.py'de hesaplanir ve kartta zaten gorunur. Senin isin yalnizca olaylar ve riskler.
+
+- Hangi semboller: brief.txt'teki `HISSE NOTU ADAYLARI` satiri (5 aday) + 13 pozisyon + `ETH`
+  (anahtar tam olarak `"ETH"`). `HISSE NOTU EKSIK/ESKI` satiri notu olmayan/8 gunden eskileri listeler.
+- MOD: pazar -> 19 sembolun HEPSI yazilir, `"period":"haftalik"`. Pozisyonlar icin 1-2. adimlardaki
+  aramalari yeniden kullan. Ek arama butcesi en fazla 11: once gundem icin 4 genel arama (bir kez
+  ara, sembollere dagit): "geopolitical war risk markets this week", "oil price OPEC this week",
+  "tariffs trade policy stocks this week", "Fed rates outlook this week"; sonra 5 aday icin aday
+  basina 1 arama ("<Sirket> CEO news this week"); kalan 2 arama ETH ve en belirsiz bir pozisyon icin.
+- MOD: aksam -> yalnizca BUGUN kayda deger gelismesi olan pozisyonlar (adim 1-3 aramalarindan) +
+  `HISSE NOTU EKSIK/ESKI` listesindeki pozisyonlardan en fazla 2 tanesi; toplam en fazla 5 sembol,
+  `"period":"gunluk"`. Ek arama en fazla 3. Gelisme yoksa `briefs` YAZMA (onceki not tasinir).
+- MOD: sabah / cumartesi -> `briefs` yazma.
+
+Alanlar (notes-yeni.json icinde UST DUZEY `"briefs"` anahtari, `intel`in altina DEGIL):
+
+```json
+"briefs": {"TSLA": {
+  "asof": "2026-09-27", "period": "haftalik|gunluk",
+  "summary": "1 cumle: bu hafta/bugun sirketle ilgili ne oldu",
+  "drivers": [{"tag": "siyaset|savas|petrol|faiz|ticaret|toplum|duzenleme|emtia|kur|sektor",
+               "text": "1 cumle: bu gundem SIRKETI nasil etkiliyor", "source_url": "...", "source_label": "..."}],
+  "ceo": {"who": "Elon Musk", "said": "kisa ozet; birebir alinti ise en fazla 15 kelime, tirnak icinde",
+          "date": "2026-09-24", "source_url": "...", "source_label": "..."},
+  "buy_risk": "1-2 cumle: su an ALMANIN/EKLEMENIN riski",
+  "sell_risk": "1-2 cumle: su an SATMANIN riski",
+  "counter": "tezine karsi bulunabilen en guclu arguman, 1 cumle",
+  "counter_source_url": "...", "counter_source_label": "...",
+  "watch": "siradaki izlenecek olay + tarih (orn. '21 Eki: 3. ceyrek bilancosu')"
+}}
+```
+
+Kurallar:
+- `asof` = bugunun UTC tarihi (YYYY-MM-DD); sayfa "bugun / N gun once" etiketini buradan hesaplar.
+- `buy_risk` ve `sell_risk` IKISI DE ZORUNLU ve dengeli: her not iki yonun de riskini yazar.
+  Ornek alis riski: 52 hafta zirvesine yakin, degerleme yuksek, yaklasan bilanco belirsizligi,
+  seyreltme (hisse ihraci) ihtimali. Ornek satis riski: yaklasan katalizoru kacirmak, 52 hafta
+  dibinde satmak, vergi (bu yil gerceklesen kar 1.000 EUR muafiyeti asarsa), tezin hala saglam olmasi.
+- Emir kipi YOK: "al", "sat", "tut", "azalt", "ekle" onerisi yazma; "... riski var", "... ihtimali"
+  gibi yaz. Adet ya da tutar yazma (onlar Vedat'in kurallarindan build.py'de hesaplaniyor).
+- `drivers`: 0-3 madde; yalnizca sirketin GELIRINE, MALIYETINE ya da DUZENLEMESINE dogrudan dokunan
+  gundem (orn. FDX yakit maliyeti/petrol, UUUU Cin nadir toprak kisitlari, TSLA tarifeler,
+  RKLB savunma butcesi, SOFI/HOOD faiz). Genel piyasa haberini her sembole yapistirma; bag yoksa bos liste.
+- `ceo`: son 30 gunde kaynakli bir aciklama yoksa `null`. ETH icin `ceo` yerine Ethereum Vakfi /
+  Vitalik Buterin aciklamasi yazilabilir; yoksa `null`.
+- `counter`: pozisyonlarda positions.json'daki `thesis` cumlesine karsi; adaylarda sirketin
+  yatirim gerekcesine karsi. Kaynak zorunlu; kaynak yoksa alani hic yazma.
+- Kaynagi olmayan hicbir `drivers`/`ceo`/`counter` yazilmaz. Metinler Turkce, sade.
+- Bir sembolun notu yazilirsa TAM yazilir (merge sembol bazinda tumden degistirir).
+- Bildirime: pazar -> "Hisse notlari: N sembol guncellendi."; aksam -> not yazildiysa
+  "Gunluk not: SEMBOL1, SEMBOL2." (tek kisa cumle, tavsiye yok).
 
 ## Uyari listesi kurallari
 

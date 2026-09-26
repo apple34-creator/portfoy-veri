@@ -102,6 +102,19 @@ def pct(a, b):
     return None if not b else round((a - b) / b * 100, 2)
 
 
+def chg_since(ts, closes, price, days):
+    """Faz 21: son noktadan 'days' gun onceki kapanisa gore % degisim (hafta / ay)."""
+    if not ts or not closes or len(ts) != len(closes):
+        return None
+    cutoff = ts[-1] - days * 86400
+    base = None
+    for t, c in zip(ts, closes):
+        if t > cutoff:
+            break
+        base = c
+    return pct(price, base)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", required=True, choices=["sabah", "aksam", "pazar"])
@@ -168,6 +181,8 @@ def main():
                 "current_price": round(price, 2),
                 "chg_1y_pct": pct(price, closes[0]),
                 "chg_6mo_pct": pct(price, cl6[0]) if cl6 else None,
+                "chg_1w_pct": chg_since(d["ts"], closes, price, 7),
+                "chg_1m_pct": chg_since(d["ts"], closes, price, 30),
                 "week52_high": round(hi, 2), "week52_low": round(lo, 2),
                 "pos_in_52w_range_pct": round((price - lo) / ((hi - lo) or 1) * 100, 1),
             })
@@ -209,6 +224,8 @@ def main():
                 "week52_high": round(max(closes), 6),
                 "week52_low": round(min(closes), 6),
                 "chg_1y_pct": pct(price, closes[0]) if len(closes) > 200 else None,
+                "chg_1w_pct": chg_since(d["ts"], closes, price, 7),
+                "chg_1m_pct": chg_since(d["ts"], closes, price, 30),
             }
 
     # Endeks kiyasi (Faz 13d): SPY (S&P 500), URTH (MSCI World). Alis gunlerindeki fiyat

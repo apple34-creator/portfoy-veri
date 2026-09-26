@@ -26,9 +26,9 @@ REPO: https://raw.githubusercontent.com/apple34-creator/portfoy-veri/main
 4) python3 build.py --mode aksam --quotes quotes.json --brief brief.txt
    exit code 1 ise YAYINLAMA, hatayi bildirimle raporla, dur.
 5) brief.txt oku. "HABER NOTU YENILENMESI GEREKEN" satirindaki semboller icin (en fazla 4; "yok" ise atla) WebSearch ile bugunun haberine bak; her biri icin 2-3 cumle tarafsiz Turkce not (tavsiye yok, al/sat ima etme) + kaynak URL + kaynak adi. "SON RAPORDAN BU YANA" satirindan tek paragraf ozet cikar.
-5b) HABER ISTIHBARATI: <D>/ISTIHBARAT.md dosyasini oku ve "MOD: aksam" bolumunu uygula (CEO/yonetici hareketleri, yatirimlar, acil uyarilar, sosyal medya). Sonuc adim 6'daki JSON'a "intel" anahtariyla girer; sema ve kurallar o dosyada.
+5b) HABER ISTIHBARATI: <D>/ISTIHBARAT.md dosyasini oku ve "MOD: aksam" bolumunu uygula (CEO/yonetici hareketleri, yatirimlar, acil uyarilar, sosyal medya). Sonuc adim 6'daki JSON'a "intel" anahtariyla girer; sema ve kurallar o dosyada. Ayni dosyadaki "Hisse notlari" bolumunu de uygula (gunluk; gelisme yoksa "briefs" yazma).
 6) notes-yeni.json yaz, SADECE degisenler:
-   {"positions":{"SEMBOL":{"why":{"text":"...","source_url":"...","source_label":"..."}}},"since_last_text":"...","intel":{...adim 5b...}}
+   {"positions":{"SEMBOL":{"why":{"text":"...","source_url":"...","source_label":"..."}}},"since_last_text":"...","intel":{...adim 5b...},"briefs":{...yalnizca varsa, adim 5b...}}
 7) Sirayla calistir (ucu de zorunlu):
    python3 build.py --merge-notes --narrative notes-yeni.json
    python3 merge_notes.py notes.json notes-yeni.json

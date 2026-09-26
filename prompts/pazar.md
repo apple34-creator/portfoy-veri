@@ -42,6 +42,7 @@ REPO: https://raw.githubusercontent.com/apple34-creator/portfoy-veri/main
    d) Aday hisselerden dikkat cekenler icin analist notu (hepsi gerekmez).
    e) HABER ISTIHBARATI: <D>/ISTIHBARAT.md dosyasini oku ve "MOD: pazar" bolumunu uygula (13 sirketin CEO/yonetici hareketleri ve yatirimlari, acil uyarilar, sirket takvimi, buyuyen sirketler radari). a) ile ayni aramalari yeniden kullan, tekrar arama.
    f) ADAY KARNESI: ISTIHBARAT.md'deki "Aday karnesi" bolumunu uygula (saglik olgulari -> candidates.SEMBOL.health).
+   g) HISSE NOTLARI: ISTIHBARAT.md'deki "Hisse notlari" bolumunu uygula (13 pozisyon + ETH + brief.txt'teki 5 aday -> ust duzey "briefs"). Karne (f) bittikten SONRA yap; aday listesi brief.txt'te.
    Arama butcesi: yaklasik 30-40 WebSearch + karne icin ayrica aday basina 1-2 (ilk kosuda 35 aday, sonra haftada ~10). Once pozisyonlar + istihbarat, sonra makro, sonra adaylar.
 6) notes-yeni.json yaz, SADECE degisenler:
    {"positions":{"SEMBOL":{"why":{"text":"...","source_url":"...","source_label":"..."}}},
@@ -49,7 +50,8 @@ REPO: https://raw.githubusercontent.com/apple34-creator/portfoy-veri/main
     "macro_calendar":[{"week":"21-27 Eyl","events":["22 Eyl: ...","25 Eyl: ..."]}],
     "candidates":{"SEMBOL":{"analyst":{"rating":"Al","target":216,"note":"..."},"health":{...adim 5f, sema ISTIHBARAT.md'de...}}},
     "since_last_text":"...",
-    "intel":{...adim 5e, sema ISTIHBARAT.md'de...}}
+    "intel":{...adim 5e, sema ISTIHBARAT.md'de...},
+    "briefs":{...adim 5g, sema ISTIHBARAT.md "Hisse notlari"nda...}}
 7) Sirayla calistir (ucu de zorunlu):
    python3 build.py --merge-notes --narrative notes-yeni.json
    python3 merge_notes.py notes.json notes-yeni.json
