@@ -167,6 +167,10 @@
   "SPY",
   "URTH"
  ],
+ "regime": [
+  "^VIX",
+  "^TNX"
+ ],
  "radar": [
   "USAR",
   "XE",

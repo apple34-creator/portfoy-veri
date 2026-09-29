@@ -246,6 +246,21 @@ def main():
                 "closes": [round(c, 4) for c in d["closes"]],
             }
 
+    # Piyasa rejimi (nakit paneli): VIX ve 10Y faiz. benchmarks'a KONMAZ (endeks kiyasi bozulur).
+    regime = dict(prev.get("regime") or {})
+    rg = cfg.get("regime") or []
+    if rg:
+        rr = fetch_spark(rg, "1y", "1d")
+        for r in rg:
+            d = rr.get(r)
+            if not d:
+                if r in regime:
+                    regime[r] = dict(regime[r], stale=True)
+                continue
+            closes = [round(c, 4) for c in d["closes"]]
+            regime[r] = {"price": round(float(d["meta"].get("regularMarketPrice") or closes[-1]), 4),
+                         "closes": closes[-60:]}
+
     # Radar grafigi (Faz 21): intel.radar'daki halka acik sirketlerin 1 yillik gunluk serisi.
     # Az sembol, her kosuda cekilir; cekilemezse onceki seri devralinir. Listeden cikan sembol duser.
     radar = {}
@@ -275,7 +290,7 @@ def main():
         "mode": a.mode,
         "source": "Yahoo Finance spark (GitHub Actions)",
         "quotes": quotes, "series": series, "candidates": candidates,
-        "fx": fx, "crypto": crypto, "benchmarks": benchmarks, "radar": radar,
+        "fx": fx, "crypto": crypto, "benchmarks": benchmarks, "regime": regime, "radar": radar,
     }
     with open(a.out, "w", encoding="ascii") as f:
         json.dump(doc, f, ensure_ascii=True, separators=(",", ":"))
