@@ -169,7 +169,8 @@
  ],
  "regime": [
   "^VIX",
-  "^TNX"
+  "^TNX",
+  "^IRX"
  ],
  "radar": [
   "USAR",
