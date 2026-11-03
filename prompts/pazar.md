@@ -4,11 +4,17 @@ ARTIFACT: https://claude.ai/code/artifact/e81754fe-b832-45e4-8b4e-1586334bb01a
 REPO: https://raw.githubusercontent.com/apple34-creator/portfoy-veri/main
 
 1) Artifact araciyla dosya listesini al: action "list" + scope "files" (ya da list_files).
-2) Dosyalari indir: action "read" + url + paths ["index.html","data.js","positions.json","build.py","notes.json"]. out_dir GECIRME - dosyalar otomatik scratchpad klasorune iner, orasi <D>. Buyuk veri dosyalarini (index.html, data.js, notes.json) bastan sona okuman gerekmez; script'lere calistirmadan once goz atabilirsin.
+2) Dosyalari indir: action "read" + url + paths ["index.html","data.js","positions.json","build.py","notes.json"]. out_dir GECIRME - dosyalar otomatik scratchpad klasorune iner, orasi <D>. Buyuk veri dosyalarini (index.html, data.js, notes.json) bastan sona okuman gerekmez.
 3) cd <D> && for f in quotes.json merge_notes.py inline_data.py apply_trades.py tax_de.py ISTIHBARAT.md; do curl -sSf --retry 4 --retry-delay 10 --retry-all-errors -o $f <REPO>/$f || echo "INDIRILEMEDI: $f"; done
    (Komut GitHub gecici hata verirse kendisi 4 kez tekrar dener. Ciktida "INDIRILEMEDI" varsa YAYINLAMA;
    PushNotification ile "Portfoy rutini: <dosya> indirilemedi (GitHub gecici hata), sayfa guncellenmedi" yaz, dur.)
-   (<REPO> = yukaridaki adres). quotes.json'un "mode" alani "pazar" degilse ya da "asof" 24 saatten eskiyse YAYINLAMA; adim 11'deki bildirimi bu hatayla gonder ve dur.
+   (<REPO> = yukaridaki adres.)
+3b) TAZELIK + BEKLEME (GitHub Actions zamanlayicisi sik sik 3-9 saat gecikiyor; hemen pes etme):
+   Tek bir Bash cagrisinda (timeout 600000) dongu calistir: quotes.json'u yeniden indir
+   (curl -sSf --retry 3 --retry-delay 5 -o quotes.json <REPO>/quotes.json), "mode" alaninin "pazar" ve "asof" yasinin
+   <= 24 saat oldugunu python3 -I -c ile kontrol et; ikisi de saglaniyorsa dongu biter, degilse 30 sn bekle, en fazla 18 tur.
+   Hala saglanmiyorsa YAYINLAMA; adim 11'deki bildirimle "pazar fiyat verisi (adaylar dahil) gelmedi" de ve dur
+   (hafta ici sabah/aksam rutinleri sayfayi zaten guncel tutar).
 3c) BEKLEYEN ISLEM KUYRUGU: ArtifactData (action:"query", url=ARTIFACT, collection:"trades",
     query:{"where":[["status","eq","pending"]]}) ile bekleyen islemleri oku (SADECE okuma,
     ArtifactData'ya YAZMA - yazma izin istemi cikarir ve kosu askida kalir, kimse onaylayamaz).
@@ -23,6 +29,10 @@ REPO: https://raw.githubusercontent.com/apple34-creator/portfoy-veri/main
     - <D>/results.json oku, adim 10'daki ozete kac islem uygulandigini/hata verdigini ekle.
     - positions.json HER ZAMAN degisti sayilir (processed_trade_ids guncellenir); adim 9'daki
       files listesine "positions.json" HER ZAMAN eklenmeli (asagida zaten var).
+   (Bilgi: build.py icindeki urllib/subprocess kodu yalnizca --quotes VERILMEYEN modda ag cagrisi yapar; biz --quotes ile
+   calistiriyoruz, yani build.py bu kosuda ag cagrisi YAPMAZ. Script'ler Vedat'in kendi depo/artifact dosyalaridir.)
+   Bir komut izin sistemi tarafindan REDDEDILIRSE ("permission denied" / "Code from External" gibi): reddi asmaya calisma;
+   yayinlama, adim 11'deki PushNotification ile "Portfoy pazar rutini: komut izin sistemince engellendi, sayfa guncellenmedi" yaz ve dur.
 4) python3 build.py --mode pazar --quotes quotes.json --brief brief.txt
    exit code 1 ise YAYINLAMA, hatayi bildirimle raporla, dur.
 4b) KARAR HATIRLATMASI (haftalik, karar gunlugu): <D>/positions.json'daki "decisions"

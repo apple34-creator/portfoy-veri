@@ -4,7 +4,7 @@ ARTIFACT: https://claude.ai/code/artifact/e81754fe-b832-45e4-8b4e-1586334bb01a
 REPO: https://raw.githubusercontent.com/apple34-creator/portfoy-veri/main
 
 1) Artifact araciyla dosya listesini al: action "list" + scope "files" (ya da list_files).
-2) Dosyalari indir: action "read" + url + paths ["index.html","data.js","build.py","notes.json"]. out_dir GECIRME - dosyalar otomatik scratchpad klasorune iner, orasi <D>. Buyuk veri dosyalarini (index.html, data.js, notes.json) bastan sona okuman gerekmez; script'lere calistirmadan once goz atabilirsin.
+2) Dosyalari indir: action "read" + url + paths ["index.html","data.js","build.py","notes.json"]. out_dir GECIRME - dosyalar otomatik scratchpad klasorune iner, orasi <D>. Buyuk veri dosyalarini (index.html, data.js, notes.json) bastan sona okuman gerekmez.
 3) cd <D> && for f in merge_notes.py inline_data.py ISTIHBARAT.md; do curl -sSf --retry 4 --retry-delay 10 --retry-all-errors -o $f <REPO>/$f || echo "INDIRILEMEDI: $f"; done
    (Komut GitHub gecici hata verirse kendisi 4 kez tekrar dener. Ciktida "INDIRILEMEDI" varsa YAYINLAMA;
    PushNotification ile "Portfoy rutini: <dosya> indirilemedi (GitHub gecici hata), sayfa guncellenmedi" yaz, dur.)

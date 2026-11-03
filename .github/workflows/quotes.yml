@@ -4,12 +4,35 @@ name: Portföy fiyat verisi
 # proxy tarafından 403 ile engelli. GitHub Actions çalıştırıcısında engel yok.
 # Burada çekilen quotes.json'ı Claude rutini raw.githubusercontent.com üzerinden
 # okuyup portföy hesaplarını yapıyor ve artifact'i yayınlıyor.
+#
+# GÜVENİLİRLİK (3 Kasım 2026'da eklendi): GitHub'ın zamanlayıcısı "en iyi çaba"
+# esaslı — yoğunlukta tetiklemeyi saatlerce geciktirebiliyor ya da hiç çalıştırmıyor
+# (ölçülen gecikme: 6-9 saat). Tek tetikleme yetmiyor; bu yüzden her koşu penceresi
+# için birkaç tetikleme var. Biri gecikse ya da düşse bir diğeri veriyi taze tutar.
+# Dakikalar bilerek "yuvarlak olmayan" seçildi (:00/:05 en yoğun anlardır).
+# Mod, tetikleme dizesine değil gerçek UTC saatine bakılarak seçilir; böylece
+# gecikmiş bir tetikleme bile doğru modda koşar.
 
 on:
   schedule:
-    - cron: '5 6 * * 1-5'     # hafta içi 06:05 UTC — açılış öncesi (Berlin 08:05 / kışın 07:05)
-    - cron: '5 21 * * 1-5'    # hafta içi 21:05 UTC — ABD kapanışı sonrası (Berlin 23:05 / kışın 22:05)
-    - cron: '55 16 * * 0'     # pazar 16:55 UTC — haftalık derin koşu (adaylar dahil)
+    # sabah penceresi (rutin 06:35 UTC) — ABD açılışı öncesi
+    - cron: '23 4 * * 1-5'
+    - cron: '13 5 * * 1-5'
+    - cron: '43 5 * * 1-5'
+    - cron: '53 6 * * 1-5'
+    # gün ortası tazeleme (elle koşu / yedek rutin için taze veri)
+    - cron: '21 12 * * 1-5'
+    # akşam penceresi (rutin 21:35 UTC) — ABD kapanışı sonrası (kışın kapanış 21:00 UTC)
+    - cron: '47 20 * * 1-5'
+    - cron: '8 21 * * 1-5'
+    - cron: '22 21 * * 1-5'
+    - cron: '13 22 * * 1-5'
+    - cron: '43 22 * * 1-5'
+    # pazar derin koşusu (rutin 17:30 UTC) — adaylar dahil, mod "pazar" olmalı
+    - cron: '12 16 * * 0'
+    - cron: '42 16 * * 0'
+    - cron: '2 17 * * 0'
+    - cron: '17 17 * * 0'
   workflow_dispatch:
     inputs:
       mode:
@@ -28,18 +51,26 @@ concurrency:
 jobs:
   fetch:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
       - name: Modu belirle
         id: m
         run: |
-          case "${{ github.event.schedule }}" in
-            "5 6 * * 1-5")  MODE=sabah ;;
-            "5 21 * * 1-5") MODE=aksam ;;
-            "55 16 * * 0")  MODE=pazar ;;
-            *)              MODE="${{ github.event.inputs.mode || 'aksam' }}" ;;
-          esac
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            MODE="${{ github.event.inputs.mode || 'aksam' }}"
+          else
+            DOW=$(date -u +%u)            # 1=Pzt ... 7=Paz
+            HOUR=$((10#$(date -u +%H)))
+            if [ "$DOW" = "7" ] && [ "$HOUR" -ge 15 ] && [ "$HOUR" -le 18 ]; then
+              MODE=pazar
+            elif [ "$HOUR" -lt 12 ]; then
+              MODE=sabah
+            else
+              MODE=aksam
+            fi
+          fi
           echo "mode=$MODE" >> "$GITHUB_OUTPUT"
           echo "Mod: $MODE"
 
@@ -53,7 +84,16 @@ jobs:
           git add quotes.json
           if git diff --cached --quiet; then
             echo "Değişiklik yok, commit atlanıyor."
-          else
-            git commit -m "veri: ${{ steps.m.outputs.mode }} $(date -u +'%Y-%m-%d %H:%M UTC')"
-            git push
+            exit 0
           fi
+          git commit -m "veri: ${{ steps.m.outputs.mode }} $(date -u +'%Y-%m-%d %H:%M UTC')"
+          # Başka bir commit araya girerse (ben ya da başka bir koşu) push reddedilir;
+          # rebase edip birkaç kez dene.
+          for i in 1 2 3 4; do
+            if git push; then exit 0; fi
+            echo "push reddedildi, deneme $i — rebase ediliyor"
+            git pull --rebase -X theirs origin main || git rebase --abort || true
+            sleep $((i * 5))
+          done
+          echo "push 4 denemede de başarısız" >&2
+          exit 1
