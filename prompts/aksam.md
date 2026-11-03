@@ -8,7 +8,10 @@ REPO: https://raw.githubusercontent.com/apple34-creator/portfoy-veri/main
 3) cd <D> && for f in quotes.json merge_notes.py inline_data.py apply_trades.py tax_de.py ISTIHBARAT.md; do curl -sSf --retry 4 --retry-delay 10 --retry-all-errors -o $f <REPO>/$f || echo "INDIRILEMEDI: $f"; done
    (Komut GitHub gecici hata verirse kendisi 4 kez tekrar dener. Ciktida "INDIRILEMEDI" varsa YAYINLAMA;
    PushNotification ile "Portfoy rutini: <dosya> indirilemedi (GitHub gecici hata), sayfa guncellenmedi" yaz, dur.)
-   (<REPO> = yukaridaki adres). quotes.json'un "asof" alani 6 saatten eskiyse YAYINLAMA - GitHub Actions calismamis demektir; adim 11'deki bildirimi bu hatayla gonder ve dur.
+   (<REPO> = yukaridaki adres). quotes.json'un "asof" alani 12 saatten eskiyse YAYINLAMA - GitHub Actions calismamis demektir; adim 11'deki bildirimi bu hatayla gonder ve dur.
+   (Not: GitHub Actions'in zamanlanmis gorevi planlanan saatte degil, bazen 3-6+ saat gecikmeli calisiyor -
+   bu normal ve GitHub'in kendi kisitidir. Eski 6 saatlik esik bu gecikmeyi sik sik yanlis "veri eski" sayip
+   gereksiz yere yayin durduruyordu; 12 saat sabah rutinindeki (14 saat) esige daha yakin ve bu gecikmeyi tolere eder.)
 3c) BEKLEYEN ISLEM KUYRUGU: ArtifactData (action:"query", url=ARTIFACT, collection:"trades",
     query:{"where":[["status","eq","pending"]]}) ile bekleyen islemleri oku (SADECE okuma,
     ArtifactData'ya YAZMA - yazma izin istemi cikarir ve kosu askida kalir, kimse onaylayamaz).
