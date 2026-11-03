@@ -1,9 +1,13 @@
 name: Portföy fiyat verisi
 
 # Neden: Claude bulut rutinlerinin sandbox'ından finans veri host'ları egress
-# proxy tarafından 403 ile engelli. GitHub Actions çalıştırıcısında engel yok.
-# Burada çekilen quotes.json'ı Claude rutini raw.githubusercontent.com üzerinden
-# okuyup portföy hesaplarını yapıyor ve artifact'i yayınlıyor.
+# proxy tarafından 403 ile engelli; ayrıca sandbox, indirilen script'lerin çalıştırılmasını
+# ("Code from External") engelliyor. GitHub Actions çalıştırıcısında bu engellerin hiçbiri yok.
+#
+# MİMARİ (3 Kasım 2026): bu iş akışı (1) fiyatları çeker, quotes.json'u işler ve (2) şifreli
+# durumdan (state.enc) portföy sayfasını üretip "pages-data" dalına yayınlar. Claude bulut
+# rutini hesap YAPMAZ; yalnızca hazır sayfayı artifact'e taşır. Veriler herkese açık depoda
+# yalnızca AES-GCM şifreli durur; anahtar PORTFOY_KEY gizli değişkeninde ve artifact sayfasında.
 #
 # GÜVENİLİRLİK (3 Kasım 2026'da eklendi): GitHub'ın zamanlayıcısı "en iyi çaba"
 # esaslı — yoğunlukta tetiklemeyi saatlerce geciktirebiliyor ya da hiç çalıştırmıyor
@@ -51,7 +55,7 @@ concurrency:
 jobs:
   fetch:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
@@ -75,7 +79,12 @@ jobs:
           echo "Mod: $MODE"
 
       - name: Fiyatları çek
-        run: python3 fetch_quotes.py --mode "${{ steps.m.outputs.mode }}"
+        run: |
+          for i in 1 2 3; do
+            python3 fetch_quotes.py --mode "${{ steps.m.outputs.mode }}" && exit 0
+            echo "Deneme $i başarısız, 40 sn sonra tekrar"; sleep 40
+          done
+          exit 1
 
       - name: quotes.json'u işle
         run: |
@@ -96,4 +105,42 @@ jobs:
             sleep $((i * 5))
           done
           echo "push 4 denemede de başarısız" >&2
+          exit 1
+
+      - name: pages-data dalını getir
+        id: pd
+        run: |
+          if git ls-remote --exit-code --heads origin pages-data >/dev/null 2>&1; then
+            git clone --quiet --depth 1 --branch pages-data "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" pd
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "pages-data dalı yok; sayfa kurulumu atlanıyor"
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Sayfayı üret
+        if: steps.pd.outputs.exists == 'true'
+        env:
+          PORTFOY_KEY: ${{ secrets.PORTFOY_KEY }}
+        run: |
+          if [ -z "$PORTFOY_KEY" ]; then
+            echo "::error::PORTFOY_KEY gizli değişkeni tanımlı değil; sayfa üretilmedi."
+            exit 1
+          fi
+          python3 -m pip install --quiet cryptography
+          python3 ci/build_page.py --mode "${{ steps.m.outputs.mode }}" --state pd/state.enc --out out
+
+      - name: pages-data dalını yayınla
+        if: steps.pd.outputs.exists == 'true'
+        run: |
+          cd out
+          git init --quiet -b pages-data
+          git config user.name  "portfoy-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html status.json state.enc state.prev.enc
+          git commit --quiet -m "sayfa: ${{ steps.m.outputs.mode }} $(date -u +'%Y-%m-%d %H:%M UTC')"
+          for i in 1 2 3; do
+            git push --force --quiet "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" pages-data && exit 0
+            sleep 10
+          done
           exit 1
